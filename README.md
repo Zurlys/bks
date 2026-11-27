@@ -128,7 +128,7 @@ make test      # builds both binaries and runs all tests
 make site      # rebuilds docs/guide.html from GUIDE.md
 ```
 
-How releases are made: [RELEASING.md](RELEASING.md). Changes: [CHANGELOG.md](CHANGELOG.md).
+How releases are made: [RELEASING.md](RELEASING.md). Changes: [CHANGELOG.md](CHANGELOG.md). Planned: [TODO.md](TODO.md).
 
 Tests use throwaway GnuPG homes (never your keyring), a fake pinentry, and a private pasteboard (never your clipboard).
 
