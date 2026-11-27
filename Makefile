@@ -1,5 +1,5 @@
 # bks = Go CLI/TUI; bks-mac = Swift helper (Touch ID, screen-lock events, clipboard).
-.PHONY: all test clean
+.PHONY: all test clean site
 
 all: bin/bks bin/bks-mac
 
@@ -13,6 +13,11 @@ bin/bks-mac: macos/bks-mac.swift
 
 test: all
 	go test ./...
+
+site: docs/guide.html
+
+docs/guide.html: GUIDE.md docs/build-guide.py
+	python3 docs/build-guide.py
 
 clean:
 	rm -rf bin

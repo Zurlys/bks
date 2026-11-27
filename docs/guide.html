@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Using bks — bks</title>
+  <meta name="description" content="How to use bks: finding and copying entries, adding and editing them, tags, one-time codes and every keyboard shortcut.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231F2B46'/%3E%3Crect x='6' y='14' width='20' height='5' fill='%23F5F7FA'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="band">
+  <nav class="band-inner" aria-label="Site">
+    <a class="home" href="./">bks</a>
+    <a href="https://github.com/Zurlys/bks">Source on GitHub</a>
+  </nav>
+</header>
+<main class="guide">
+<!-- generated from GUIDE.md by docs/build-guide.py: edit GUIDE.md, then run make site -->
+<h1>Using bks</h1>
+<p>Everything you do day to day: opening the vault, finding and copying entries, adding and editing them, tags, one-time codes and every keyboard shortcut. For installation see the <a href="https://github.com/Zurlys/bks/blob/main/README.md">README</a>.</p>
+<ul><li><a href="#open-and-unlock">Open and unlock</a></li><li><a href="#find-an-entry">Find an entry</a></li><li><a href="#copy-a-password-username-or-code">Copy a password, username or code</a></li><li><a href="#add-an-entry">Add an entry</a></li><li><a href="#edit-or-delete-an-entry">Edit or delete an entry</a></li><li><a href="#tags">Tags</a></li><li><a href="#one-time-codes">One-time codes</a></li><li><a href="#generate-a-password">Generate a password</a></li><li><a href="#locking">Locking</a></li><li><a href="#keyboard-shortcuts">Keyboard shortcuts</a></li><li><a href="#command-line">Command line</a></li></ul>
+<h2 id="open-and-unlock">Open and unlock</h2>
+<pre><code>bks</code></pre>
+<p>bks asks for <strong>Touch ID</strong> if you enrolled it (<code>bks touchid enroll</code>). The Touch ID dialog has a <strong>Use GPG passphrase</strong> button; otherwise, or without Touch ID, your GPG key's passphrase dialog opens. Cancel stops.</p>
+<p>The first time a Mac opens a vault, bks shows how many entries it holds and which keys can open it, and asks whether to trust it. Say yes only for a vault file you know is yours.</p>
+<h2 id="find-an-entry">Find an entry</h2>
+<p>Just type: the search box always has the focus.</p>
+<ul><li>Type fragments of what you remember, in any order: <code>jane corp</code> finds <code>jane.doe@corp.example</code>, <code>git work</code> finds "GitLab (work)".</li><li>Letters must appear in that order within one field, but may have gaps: <code>gtlb</code> finds "GitLab".</li><li>Accents don't matter: <code>petraite</code> finds "Petraitė".</li><li><code>#work</code> finds entries tagged <code>work</code>; <code>#work git</code> finds entries tagged <code>work</code> that also match <code>git</code>.</li><li>Searched: title, username, the host part of URLs, tags and the names of custom fields. Never searched: passwords, notes, one-time-code secrets and field values.</li></ul>
+<p>Best matches come first. <code>↑</code> <code>↓</code> move, <code>esc</code> clears the search (a second <code>esc</code> quits).</p>
+<h2 id="copy-a-password-username-or-code">Copy a password, username or code</h2>
+<div class="table"><table><thead><tr><th>Key</th><th>Copies</th></tr></thead><tbody><tr><td><code>enter</code></td><td>the password of the selected entry</td></tr><tr><td><code>ctrl-u</code></td><td>the username</td></tr><tr><td><code>ctrl-o</code></td><td>the current one-time code</td></tr></tbody></table></div>
+<p>For anything else, press <code>tab</code> to move into the entry's fields, choose one with <code>↑</code> <code>↓</code> and press <code>enter</code> to copy it. <code>r</code> shows a hidden value (password, secret field) for 10 seconds; long values wrap.</p>
+<p>Copies stay on this Mac — they don't go to your iPhone through Universal Clipboard and clipboard-history apps skip them — and the clipboard is cleared after 30 seconds, unless you copied something else in the meantime. The status line says what was copied and counts down.</p>
+<h2 id="add-an-entry">Add an entry</h2>
+<h3 id="in-the-ui">In the UI</h3>
+<p>Press <code>ctrl-n</code>. A form opens:</p>
+<div class="table"><table><thead><tr><th>Field</th><th>What to enter</th></tr></thead><tbody><tr><td>title</td><td>required; what you'll search for, e.g. <code>GitLab (work)</code></td></tr><tr><td>username</td><td>login name or email</td></tr><tr><td>password</td><td>type it, or press <code>ctrl-g</code> to generate a 24-character one; <code>ctrl-r</code> shows what you typed</td></tr><tr><td>urls</td><td>one or more, separated by spaces</td></tr><tr><td>tags</td><td>separated by spaces, with or without <code>#</code>: <code>#work #git</code></td></tr><tr><td>otp</td><td>the one-time-code secret: the <code>otpauth://…</code> link from the QR code, or the text code shown under "can't scan the QR code?"</td></tr><tr><td>notes</td><td>free text, several lines (<code>enter</code> starts a new line here)</td></tr></tbody></table></div>
+<p>Move between fields with <code>tab</code> / <code>shift-tab</code> (or <code>↓</code> / <code>↑</code>, and <code>enter</code> outside the notes). <strong>Save with <code>ctrl-s</code>.</strong> <code>esc</code> cancels; if you changed something, press <code>esc</code> twice to throw the changes away.</p>
+<h3 id="from-the-command-line">From the command line</h3>
+<pre><code>bks add --title &quot;GitHub&quot; --user jane --url https://github.com --tag dev --tag personal --generate 24</code></pre>
+<div class="table"><table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td><code>--title</code></td><td>required</td></tr><tr><td><code>--user</code></td><td>username</td></tr><tr><td><code>--url</code></td><td>a URL; repeat for more</td></tr><tr><td><code>--tag</code></td><td>a tag; repeat for more</td></tr><tr><td><code>--notes</code></td><td>notes</td></tr><tr><td><code>--generate 24</code></td><td>generate a password of 24 characters (<code>--no-symbols</code> for letters and digits only)</td></tr><tr><td><code>--words 6</code></td><td>generate a passphrase of 6 words instead</td></tr><tr><td><code>--password-stdin</code></td><td>read the password from stdin: <code>pbpaste | bks add --title X --password-stdin</code></td></tr><tr><td><code>--otp</code></td><td>ask for the one-time-code secret, hidden</td></tr><tr><td><code>--otp-stdin</code></td><td>read the one-time-code secret from stdin</td></tr></tbody></table></div>
+<p>Without <code>--generate</code>, <code>--words</code> or <code>--password-stdin</code>, bks asks for the password without echoing it (press <code>enter</code> on an empty prompt to generate one). Secrets are never taken as command-line arguments, because those end up in your shell history.</p>
+<h3 id="from-1password">From 1Password</h3>
+<pre><code>bks import 1password ~/export.1pux --dry-run    # see what would be imported; shows no secrets
+bks import 1password ~/export.1pux              # import, then offers to delete the export</code></pre>
+<p>Export from 1Password with File → Export → your account → <code>.1pux</code>, into a folder that is <strong>not</strong> synced to iCloud (not the Desktop or Documents). Attachments are not imported: save them elsewhere before you leave 1Password; the import lists which entries had them. Importing the same export again adds nothing twice.</p>
+<h2 id="edit-or-delete-an-entry">Edit or delete an entry</h2>
+<ul><li><strong>Edit:</strong> select the entry and press <code>ctrl-e</code> (or <code>e</code> while in its fields). The same form opens, filled in. Save with <code>ctrl-s</code>.</li><ul><li>Changing the password keeps the old one: bks stores the five previous passwords of each entry in the vault.</li><li>The otp field starts empty when a code is set: leave it empty to keep the code, type a new secret to replace it, or type <code>-</code> to remove it.</li><li>Custom fields (for example those imported from 1Password) are kept as they are; the form does not edit them yet.</li></ul><li><strong>Delete:</strong> select the entry, press <code>ctrl-d</code>, then <code>y</code>. Any other key keeps it.</li></ul>
+<p>If another Mac saved the vault while you were editing, bks merges both sets of changes when you save. If saving fails, the form stays open with everything you typed.</p>
+<h2 id="tags">Tags</h2>
+<p>Tags group entries so you can find them by category: <code>#work</code>, <code>#bank</code>, <code>#family</code>, <code>#server</code>.</p>
+<ul><li><strong>Add tags</strong> in the form's tags field (<code>#work #git</code>) or with <code>--tag work --tag git</code> on the command line. The <code>#</code> is optional; bks stores tags without it.</li><li><strong>Search by tag</strong> with <code>#</code>: <code>#work</code> lists everything tagged <code>work</code>; <code>#work git</code> narrows it down; a plain word like <code>work</code> also matches tags, along with titles and usernames.</li><li><strong>List</strong> entries with a tag from the shell: <code>bks ls &#x27;#work&#x27;</code> (quote it: <code>#</code> starts a comment in the shell).</li><li><strong>Imported tags:</strong> a 1Password import keeps your 1Password tags, adds the kind of item for non-logins (<code>credit-card</code>, <code>ssh-key</code>, <code>secure-note</code>, …), and the 1Password vault's name when you exported more than one vault.</li></ul>
+<h2 id="one-time-codes">One-time codes</h2>
+<p>Add a code by filling the <strong>otp</strong> field of an entry (in the form, or <code>bks add … --otp</code>). bks accepts the full <code>otpauth://</code> link from the QR code or the text code (base32) that sites show under "can't scan the QR code?".</p>
+<ul><li>In the UI the code is shown live with a countdown bar; in the last five seconds the next code is shown too.</li><li><code>ctrl-o</code> copies the current code; in the fields view, <code>enter</code> on the one-time row does the same.</li><li>From the shell: <code>bks otp github</code> prints the code (and how long it stays valid, on stderr).</li></ul>
+<h2 id="generate-a-password">Generate a password</h2>
+<pre><code>bks gen                       # 24 characters: letters, digits, symbols (~151 bits)
+bks gen -l 32 --no-symbols    # letters and digits only, for sites that reject symbols
+bks gen --words 6             # six words, e.g. chest-siesta-announcer-sneeze-speech-barn (~78 bits)
+bks gen --words 5 --sep &#x27; &#x27;   # words separated by spaces</code></pre>
+<p>In the form, <code>ctrl-g</code> fills the password field with a 24-character password. Look-alike characters (<code>0 O 1 l I</code>) are never used.</p>
+<h2 id="locking">Locking</h2>
+<p>bks locks itself when the screen locks, the screensaver starts, the Mac sleeps or the display goes to sleep, when you switch user, after 5 idle minutes, and after 8 hours. <code>ctrl-l</code> locks immediately.</p>
+<p>Locking closes the UI and restarts bks at the lock screen, so nothing decrypted stays in memory. Unsaved changes in an open form are discarded.</p>
+<div class="table"><table><thead><tr><th>On the lock screen</th><th></th></tr></thead><tbody><tr><td><code>enter</code></td><td>unlock (Touch ID if enrolled, otherwise your GPG passphrase)</td></tr><tr><td><code>g</code></td><td>unlock with your GPG passphrase</td></tr><tr><td><code>q</code> / <code>esc</code></td><td>quit</td></tr></tbody></table></div>
+<h2 id="keyboard-shortcuts">Keyboard shortcuts</h2>
+<h3 id="everywhere-in-the-ui">Everywhere in the UI</h3>
+<div class="table"><table><thead><tr><th>Key</th><th>Action</th></tr></thead><tbody><tr><td><code>ctrl-l</code></td><td>lock now</td></tr><tr><td><code>ctrl-c</code></td><td>quit</td></tr></tbody></table></div>
+<h3 id="entry-list-the-search-box-has-the-focus">Entry list (the search box has the focus)</h3>
+<div class="table"><table><thead><tr><th>Key</th><th>Action</th></tr></thead><tbody><tr><td>typing</td><td>search</td></tr><tr><td><code>↑</code> / <code>↓</code></td><td>previous / next entry (also <code>ctrl-k</code>, <code>ctrl-p</code> / <code>ctrl-j</code>)</td></tr><tr><td><code>page up</code> / <code>page down</code></td><td>jump a page</td></tr><tr><td><code>enter</code></td><td>copy password</td></tr><tr><td><code>ctrl-u</code></td><td>copy username</td></tr><tr><td><code>ctrl-o</code></td><td>copy one-time code</td></tr><tr><td><code>tab</code></td><td>go to the entry's fields</td></tr><tr><td><code>ctrl-n</code></td><td>new entry</td></tr><tr><td><code>ctrl-e</code></td><td>edit entry</td></tr><tr><td><code>ctrl-d</code></td><td>delete entry (asks first)</td></tr><tr><td><code>esc</code></td><td>clear the search; quit when it is empty</td></tr></tbody></table></div>
+<h3 id="entry-fields-after-tab">Entry fields (after <code>tab</code>)</h3>
+<div class="table"><table><thead><tr><th>Key</th><th>Action</th></tr></thead><tbody><tr><td><code>↑</code> / <code>↓</code></td><td>previous / next field (also <code>k</code> / <code>j</code>)</td></tr><tr><td><code>enter</code></td><td>copy the field (the one-time row copies the current code)</td></tr><tr><td><code>r</code></td><td>reveal a hidden value for 10 seconds; press again to hide</td></tr><tr><td><code>e</code></td><td>edit the entry</td></tr><tr><td><code>tab</code> / <code>esc</code> / <code>←</code></td><td>back to the list</td></tr><tr><td><code>ctrl-u</code>, <code>ctrl-o</code>, <code>ctrl-n</code>, <code>ctrl-e</code>, <code>ctrl-d</code></td><td>as in the list</td></tr></tbody></table></div>
+<h3 id="edit-form">Edit form</h3>
+<div class="table"><table><thead><tr><th>Key</th><th>Action</th></tr></thead><tbody><tr><td><code>ctrl-s</code></td><td>save</td></tr><tr><td><code>tab</code> / <code>shift-tab</code></td><td>next / previous field (also <code>↓</code> / <code>↑</code>, and <code>enter</code> outside the notes)</td></tr><tr><td><code>ctrl-g</code></td><td>generate a password into the password field</td></tr><tr><td><code>ctrl-r</code></td><td>show / hide the password and one-time secret</td></tr><tr><td><code>esc</code></td><td>cancel (twice if you changed something)</td></tr></tbody></table></div>
+<p>All other keys type into the field: <code>ctrl-u</code> and <code>ctrl-o</code> edit text here instead of copying.</p>
+<h3 id="delete-confirmation">Delete confirmation</h3>
+<div class="table"><table><thead><tr><th>Key</th><th>Action</th></tr></thead><tbody><tr><td><code>y</code></td><td>delete</td></tr><tr><td>any other key</td><td>keep the entry</td></tr></tbody></table></div>
+<h2 id="command-line">Command line</h2>
+<div class="table"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody><tr><td><code>bks</code></td><td>open the UI</td></tr><tr><td><code>bks get &lt;search&gt;</code></td><td>print the password of the one matching entry</td></tr><tr><td><code>bks get -f user &lt;search&gt;</code></td><td>print another field: <code>user</code>, <code>url</code>, <code>notes</code>, <code>title</code>, <code>otp</code> or a custom field's name</td></tr><tr><td><code>bks otp &lt;search&gt;</code></td><td>print the current one-time code</td></tr><tr><td><code>bks ls [&lt;search&gt;]</code></td><td>list entries (no secrets)</td></tr><tr><td><code>bks add …</code></td><td>add an entry (<a href="#from-the-command-line">options</a>)</td></tr><tr><td><code>bks gen …</code></td><td>generate a password (<a href="#generate-a-password">options</a>)</td></tr><tr><td><code>bks import 1password &lt;file.1pux&gt;</code></td><td>import from 1Password (<code>--dry-run</code> first; <code>--archived</code> includes archived items)</td></tr><tr><td><code>bks init</code></td><td>create a vault: pick or create a GPG key, see what to back up, enable Touch ID</td></tr><tr><td><code>bks touchid status|enroll|remove</code></td><td>Touch ID on this Mac</td></tr><tr><td><code>bks recipients</code></td><td>who can open the vault</td></tr><tr><td><code>bks recipients add &lt;key&gt;</code></td><td>let another GPG key open it, e.g. a backup key</td></tr><tr><td><code>bks recipients remove &lt;key or name&gt;</code></td><td>stop a key from opening it (also replaces the vault's Touch ID secret; other Macs confirm once)</td></tr><tr><td><code>bks rotate</code></td><td>replace the vault's Touch ID secret</td></tr><tr><td><code>bks version</code></td><td>the version you are running</td></tr></tbody></table></div>
+<p><code>get</code> and <code>otp</code> refuse to guess: if your search matches several entries and none has exactly that title, they list the matches and exit with status 2. Use more words, or the exact title.</p>
+<p>Useful in scripts:</p>
+<pre><code>export GITHUB_TOKEN=&quot;$(bks get -f token github)&quot;
+mycli login --code &quot;$(bks otp myservice)&quot;   # hand a code straight to a command</code></pre>
+<p>Environment variables: <code>BKS_VAULT</code> (where the vault is; point it into iCloud Drive or Syncthing to share it between Macs), <code>BKS_STATE_DIR</code> (this Mac's state) and <code>BKS_UNLOCK=gpg</code> (skip Touch ID).</p>
+</main>
+<footer>
+  <p>bks is open source under the <a href="https://github.com/Zurlys/bks/blob/main/LICENSE">MIT license</a>. This page loads nothing from anywhere else.</p>
+</footer>
+</body>
+</html>

@@ -72,6 +72,8 @@ bks import 1password ~/export.1pux --dry-run     # then without --dry-run
 
 Secrets are never taken as command-line arguments (they would end up in shell history and `ps`): passwords are generated, prompted without echo, or read from stdin (`--password-stdin`, `--otp-stdin`).
 
+The [guide](GUIDE.md) ([on the website](https://zurlys.github.io/bks/guide.html)) covers everything day to day: finding and copying entries, adding and editing them, tags, one-time codes and every keyboard shortcut.
+
 ## Keys
 
 | Where | Keys |

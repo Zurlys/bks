@@ -271,3 +271,53 @@ footer {
   color: var(--ink-soft);
 }
 footer p { margin: 0; }
+
+/* ---- guide page ----------------------------------------------------------- */
+
+.band {
+  background-color: var(--envelope);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='22' viewBox='0 0 46 22'%3E%3Ctext x='2' y='15' font-family='Menlo,monospace' font-size='11' fill='%232E3D60' transform='rotate(-18 23 11)'%3Ebks%3C/text%3E%3C/svg%3E");
+  padding: 0.9rem 1rem;
+}
+.band-inner {
+  max-width: var(--measure);
+  margin: 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+}
+.band a { color: var(--on-envelope); font-size: 1rem; }
+.band .home { font: 600 1.1rem/1 var(--mono); text-decoration: none; margin-right: auto; }
+
+.guide {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 2.5rem 1rem 1rem;
+}
+.guide h1 { font-size: clamp(2.2rem, 5vw, 3rem); margin-bottom: 1rem; }
+.guide h2 { margin-top: 3rem; padding-top: 0.25rem; }
+.guide h3 { margin-top: 1.75rem; font-size: 1.2rem; }
+.guide ul { padding-left: 1.2rem; margin: 0 0 1rem; }
+.guide li { margin-bottom: 0.3rem; }
+.guide li ul { margin: 0.3rem 0 0; }
+.guide pre {
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--code-bg);
+  border-radius: 6px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+.guide pre code { background: none; padding: 0; font-size: 0.82rem; }
+.guide h2:target, .guide h3:target { scroll-margin-top: 1rem; }
+
+.table { overflow-x: auto; margin: 0.5rem 0 1.5rem; }
+.table table { border-collapse: collapse; width: 100%; font-size: 1rem; }
+.table th, .table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.45rem 1rem 0.45rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.table th { font-weight: 700; border-bottom-width: 2px; }
+.table td:first-child { white-space: nowrap; }
