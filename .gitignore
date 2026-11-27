@@ -1,0 +1,18 @@
+# build output
+/bin/
+*.test
+*.out
+
+# throwaway test keyrings / vaults
+/.gt/
+/.e/
+/.e2e/
+
+# never commit vaults, key exports or revocation certificates
+*.gpg
+*.gpg.bak
+*.asc
+*.rev
+
+# private notes (personal key details, decision log) — never published
+*.private.md

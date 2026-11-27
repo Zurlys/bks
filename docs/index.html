@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>bks — Best Kept Secret</title>
+  <meta name="description" content="A password manager for the macOS terminal: one GPG-encrypted file, Touch ID, fuzzy search, and it locks when your screen locks.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231F2B46'/%3E%3Crect x='6' y='14' width='20' height='5' fill='%23F5F7FA'/%3E%3C/svg%3E">
+  <script src="demo.js" defer></script>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <p class="wordmark">bks</p>
+      <h1>Best Kept Secret</h1>
+      <p class="deck">A password manager for the macOS terminal. Your passwords live in one GPG-encrypted file. Touch&nbsp;ID opens it, typing finds what you need, Enter copies it — and it locks the moment your screen does.</p>
+      <div class="install">
+        <pre>git clone https://github.com/Zurlys/bks
+cd bks &amp;&amp; make</pre>
+        <button type="button" class="copy" data-text="git clone https://github.com/Zurlys/bks &amp;&amp; cd bks &amp;&amp; make">Copy</button>
+      </div>
+      <nav class="hero-links" aria-label="Project">
+        <a href="https://github.com/Zurlys/bks">Source on GitHub</a>
+        <a href="https://github.com/Zurlys/bks/blob/main/DESIGN.md">How it works</a>
+        <a href="https://github.com/Zurlys/bks/blob/main/SECURITY.md">Security model</a>
+      </nav>
+    </div>
+
+    <figure class="terminal" aria-label="The bks terminal interface: a search for 'jane corp' narrows the list to two entries, Enter copies the password, and the status line confirms the copy stays on this Mac.">
+      <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span><b>bks</b></div>
+<pre id="tui" aria-hidden="true"><span class="hl">bks</span>                                      <span class="dim">unlocked · idle lock 5:00</span>
+<span class="dim">&gt;</span> <span id="q">jane corp</span><span class="cursor"> </span>                                                  <span class="dim" id="count">2/12</span>
+╭─────────────────────────╮╭─────────────────────────────────────╮
+│ <span class="sel">▌GitLab (work)</span>          ││ <b>GitLab (work)</b>            <span class="dim">#work #git</span> │
+│ <span class="sel">▌</span><span class="dim">jane.doe@corp.example</span>  ││                                     │
+│  Grafana prod           ││   <span class="dim">username</span>  jane.doe@corp.example   │
+│  <span class="dim">jane.doe@corp.example</span>  ││   <span class="dim">password</span>  ••••••••••••            │
+│                         ││   <span class="dim">one-time</span>  <span id="otp">482 913</span>  <span id="bar"><span class="bar-on">━━━━━━</span><span class="dim">────</span></span> <span id="secs">19s</span> │
+│                         ││   <span class="dim">url</span>       https://gitlab.corp…    │
+╰─────────────────────────╯╰─────────────────────────────────────╯
+ <span class="ok" id="status">✓ password copied (this Mac only) · clipboard clears in 30s</span>
+ <span class="dim">enter copy · ^o otp · ^u user · tab fields · ^l lock · esc quit</span></pre>
+    </figure>
+  </div>
+</header>
+
+<main>
+  <section>
+    <h2>A file, not a service</h2>
+    <p>There is no account, no server and no subscription. The vault is a single encrypted file: keep it on this Mac, or put it in iCloud Drive, Syncthing or git and use it on every Mac you own. Edits from different Macs are merged, and an older copy arriving through sync can never undo a newer change.</p>
+    <p>The file is a standard OpenPGP message. If bks disappeared tomorrow, <code>gpg -d vault.gpg</code> would still give you every password as plain JSON.</p>
+  </section>
+
+  <section>
+    <h2>What it does</h2>
+    <dl class="features">
+      <dt>Opens with Touch ID or your GPG key</dt>
+      <dd>Touch ID releases a secret that only this Mac's Secure Enclave can unseal. Your GPG passphrase always works too, through the normal pinentry dialog.</dd>
+
+      <dt>Finds things the way you remember them</dt>
+      <dd>Type fragments in any order: <code>jane corp</code> finds <code>jane.doe@corp.example</code>. Accents don't matter, and <code>#work</code> searches tags. Passwords and notes are never searched.</dd>
+
+      <dt>Keeps copies on this Mac</dt>
+      <dd>A copied password does not travel to your iPhone through Universal Clipboard, is hidden from clipboard-history apps, and is cleared after 30 seconds — unless you copied something else since.</dd>
+
+      <dt>Shows one-time codes</dt>
+      <dd>TOTP codes count down live next to the password; <kbd>ctrl</kbd>-<kbd>o</kbd> copies the current one.</dd>
+
+      <dt>Locks itself</dt>
+      <dd>On screen lock, screensaver, sleep or after five idle minutes. Locking restarts the process, so nothing decrypted stays behind in memory.</dd>
+
+      <dt>Moves you off 1Password</dt>
+      <dd>Import a <code>.1pux</code> export. A dry run shows what will come across without printing a single secret.</dd>
+    </dl>
+  </section>
+
+  <section>
+    <h2>Two ways in, one file</h2>
+    <p>The vault opens with either key. Losing this Mac loses only the Touch ID way in; your GPG key remains.</p>
+    <svg class="doors doors-wide" viewBox="0 0 760 250" role="img" aria-labelledby="dw-title dw-desc">
+      <title id="dw-title">How the vault opens</title>
+      <desc id="dw-desc">vault.gpg holds the JSON vault. Your GPG key opens it through its public-key packet; Touch ID lets the Secure Enclave unseal the unlock secret, which opens its other packet.</desc>
+      <g class="door">
+        <rect x="20" y="30" width="200" height="74" rx="4"/>
+        <text x="120" y="62">your GPG key</text>
+        <text x="120" y="84" class="small">passphrase via pinentry</text>
+      </g>
+      <g class="door">
+        <rect x="540" y="30" width="200" height="74" rx="4"/>
+        <text x="640" y="62">Touch ID</text>
+        <text x="640" y="84" class="small">Secure Enclave unseals</text>
+      </g>
+      <path class="link" d="M120 104 L330 160"/>
+      <path class="link" d="M640 104 L430 160"/>
+      <text x="200" y="158" class="small" text-anchor="end">public-key packet</text>
+      <text x="560" y="158" class="small" text-anchor="start">unlock-secret packet</text>
+      <g class="vault">
+        <rect x="280" y="160" width="200" height="80" rx="4"/>
+        <text x="380" y="194">vault.gpg</text>
+        <rect x="305" y="210" width="150" height="12" class="redact"/>
+      </g>
+    </svg>
+    <svg class="doors doors-tall" viewBox="0 0 320 420" role="img" aria-labelledby="dt-title dt-desc">
+      <title id="dt-title">How the vault opens</title>
+      <desc id="dt-desc">vault.gpg holds the JSON vault. Your GPG key opens it through its public-key packet; Touch ID lets the Secure Enclave unseal the unlock secret, which opens its other packet.</desc>
+      <g class="door">
+        <rect x="10" y="10" width="140" height="70" rx="4"/>
+        <text x="80" y="40">GPG key</text>
+        <text x="80" y="62" class="small">via pinentry</text>
+      </g>
+      <g class="door">
+        <rect x="170" y="10" width="140" height="70" rx="4"/>
+        <text x="240" y="40">Touch ID</text>
+        <text x="240" y="62" class="small">Secure Enclave</text>
+      </g>
+      <path class="link" d="M80 80 L80 200 L130 300"/>
+      <path class="link" d="M240 80 L240 200 L190 300"/>
+      <text x="70" y="165" class="small" text-anchor="end" transform="rotate(-90 70 165)">public-key packet</text>
+      <text x="256" y="175" class="small" text-anchor="middle" transform="rotate(90 256 175)">unlock-secret packet</text>
+      <g class="vault">
+        <rect x="60" y="300" width="200" height="90" rx="4"/>
+        <text x="160" y="336">vault.gpg</text>
+        <rect x="85" y="354" width="150" height="12" class="redact"/>
+      </g>
+    </svg>
+  </section>
+
+  <section>
+    <h2>Install</h2>
+    <p>You need macOS, <a href="https://gnupg.org">GnuPG</a> (tested with <a href="https://gpgtools.org">GPG Suite</a>; Homebrew's <code>gnupg</code> runs in CI), Go 1.27+ and the Xcode command-line tools.</p>
+    <ol class="steps">
+      <li><p>Build both binaries:</p><pre><code>git clone https://github.com/Zurlys/bks
+cd bks
+make</code></pre></li>
+      <li><p>Put <code>bks</code> on your PATH, keeping it next to its helper:</p><pre><code>ln -s "$PWD/bin/bks" ~/.local/bin/bks</code></pre></li>
+      <li><p>Create the vault. bks lists your GPG keys (or creates one), tells you exactly what to back up, and offers Touch ID:</p><pre><code>bks init</code></pre></li>
+      <li><p>Open it:</p><pre><code>bks</code></pre></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>What it protects against</h2>
+    <div class="threats">
+      <div>
+        <h3>Protects</h3>
+        <ul>
+          <li>A lost or stolen Mac</li>
+          <li>Someone at your Mac after the screen locks</li>
+          <li>The vault file leaking through sync, backups or git</li>
+          <li>A forged or rolled-back vault arriving through sync</li>
+          <li>Passwords leaking through the clipboard</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Doesn't protect</h3>
+        <ul>
+          <li>Malware running as you while the vault is open</li>
+          <li>Old copies of the vault after you remove a key</li>
+          <li>Anyone holding both your GPG key and its passphrase</li>
+        </ul>
+      </div>
+    </div>
+    <p>The full threat model, the design and how to report a vulnerability are in <a href="https://github.com/Zurlys/bks/blob/main/SECURITY.md">SECURITY.md</a>. bks has not been independently audited.</p>
+  </section>
+</main>
+
+<footer>
+  <p>bks is open source under the <a href="https://github.com/Zurlys/bks/blob/main/LICENSE">MIT license</a>. Passphrases use the <a href="https://www.eff.org/dice">EFF Large Wordlist</a> (CC BY 3.0). This page loads nothing from anywhere else.</p>
+</footer>
+
+</body>
+</html>

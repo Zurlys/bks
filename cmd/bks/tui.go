@@ -1,0 +1,192 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+	"syscall"
+	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"golang.org/x/term"
+
+	"github.com/Zurlys/bks/internal/clipboard"
+	"github.com/Zurlys/bks/internal/gen"
+	"github.com/Zurlys/bks/internal/macos"
+	"github.com/Zurlys/bks/internal/store"
+	"github.com/Zurlys/bks/internal/tui"
+)
+
+// lockedEnv carries the lock reason into the re-executed process.
+const lockedEnv = "BKS_LOCKED"
+
+// cmdTUI unlocks the vault and runs the UI. When the UI locks, the process
+// replaces itself with a fresh one (syscall.Exec): nothing that was
+// decrypted survives, which a garbage-collected Go process can't otherwise
+// guarantee. The fresh process starts at the lock screen.
+func cmdTUI(ctx context.Context, s *store.Store) error {
+	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
+		fmt.Fprint(os.Stderr, usage)
+		return errors.New("the UI needs a terminal; the commands above work in scripts")
+	}
+	setGPGTTY()
+	reason := os.Getenv(lockedEnv)
+	os.Unsetenv(lockedEnv)
+
+	// Warnings from unlocking (e.g. a passphrase saved in the Keychain)
+	// would vanish under the full-screen UI: collect them and make the
+	// person acknowledge them first.
+	var warnings []string
+	warn := s.Warn
+	s.Warn = func(m string) { warnings = append(warnings, m) }
+	defer func() { s.Warn = warn }()
+
+	var sess *store.Session
+	for {
+		choice := byte('u')
+		if reason != "" {
+			if choice = lockScreen(reason, s.TouchIDEnrolled()); choice == 'q' {
+				return nil
+			}
+		}
+		warnings = nil // only the warnings of the attempt that succeeds
+		var err error
+		if choice == 'g' || !s.TouchIDEnrolled() {
+			fmt.Fprintln(os.Stderr, "bks: unlocking with GPG (a passphrase window opens)…")
+			sess, err = s.UnlockGPG(ctx)
+		} else {
+			fmt.Fprintln(os.Stderr, "bks: unlocking with Touch ID…")
+			sess, err = unlock(ctx, s)
+		}
+		if err == nil {
+			break
+		}
+		if reason == "" { // first start: report and exit
+			return err
+		}
+		reason = "unlock failed: " + firstLine(err.Error())
+	}
+
+	// Screen-lock events and a this-Mac-only, concealed clipboard need the
+	// helper; without it say so plainly before the UI starts.
+	cb := clipboard.System{}
+	var events <-chan string
+	stopWatch := func() {}
+	if h, err := macos.FindHelper(); err == nil {
+		cb.Helper = &h
+		if ch, stop, err := h.Watch(); err == nil {
+			events, stopWatch = ch, stop
+		} else {
+			warnings = append(warnings, "the screen-lock watcher did not start ("+err.Error()+"): bks will NOT lock when the screen locks")
+		}
+	} else {
+		warnings = append(warnings, "the bks-mac helper is missing (run make): bks will NOT lock when the screen locks, and copies reach other Apple devices and clipboard history")
+	}
+	defer stopWatch()
+
+	if len(warnings) > 0 {
+		for _, w := range warnings {
+			fmt.Fprintln(os.Stderr, "bks: warning:", w)
+		}
+		fmt.Fprint(os.Stderr, "\nPress Enter to continue, q to quit. ")
+		if !waitEnter() {
+			return nil
+		}
+	}
+
+	save := func() error { return s.Save(ctx, sess) }
+	if sess.ReadOnly {
+		save = nil // this Mac's last good copy: viewing and copying only
+	}
+	m := tui.New(tui.Options{
+		Vault: sess.Vault, Clipboard: cb, Concealed: cb.Concealed(), Events: events,
+		UnlockedAt: time.Now().Round(0),
+		Save:       save,
+		Generate:   func() (string, error) { return gen.Password(24, true) },
+	})
+	final, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+	if err != nil {
+		return err
+	}
+	res := final.(tui.Model).Result()
+	if !res.Lock {
+		return nil
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	stopWatch() // defers do not run across exec
+	return syscall.Exec(exe, []string{exe}, append(os.Environ(), lockedEnv+"="+res.Reason))
+}
+
+// lockScreen shows why bks locked and returns 'u' (unlock: Touch ID when
+// enrolled, else GPG), 'g' (GPG passphrase) or 'q' (quit).
+func lockScreen(reason string, touchID bool) byte {
+	fmt.Print("\033[H\033[2J")
+	fmt.Printf("\n   🔒 bks is locked: %s\n\n", reason)
+	if touchID {
+		fmt.Print("   enter  unlock with Touch ID\n   g      use the GPG passphrase\n")
+	} else {
+		fmt.Print("   enter  unlock with GPG\n")
+	}
+	fmt.Print("   q      quit\n\n")
+	for {
+		switch k := readKey(); k {
+		case '\r', '\n':
+			return 'u'
+		case 'g', 'G':
+			return 'g'
+		case 'q', 'Q', 3, 4, 27, 0:
+			return 'q'
+		}
+	}
+}
+
+// waitEnter reads keys until Enter (true) or q/ctrl-c/ctrl-d/esc (false).
+func waitEnter() bool {
+	for {
+		switch readKey() {
+		case '\r', '\n':
+			return true
+		case 'q', 'Q', 3, 4, 27, 0:
+			return false
+		}
+	}
+}
+
+// readKey reads one key in raw mode; 0 on error.
+func readKey() byte {
+	fd := int(os.Stdin.Fd())
+	old, err := term.MakeRaw(fd)
+	if err != nil {
+		return 0
+	}
+	defer term.Restore(fd, old)
+	buf := make([]byte, 1)
+	if n, err := os.Stdin.Read(buf); err != nil || n == 0 {
+		return 0
+	}
+	return buf[0]
+}
+
+// setGPGTTY tells gpg-agent which terminal a text-mode pinentry should use
+// (e.g. over SSH). The GUI pinentry on macOS does not need it.
+func setGPGTTY() {
+	if os.Getenv("GPG_TTY") != "" {
+		return
+	}
+	cmd := exec.Command("tty")
+	cmd.Stdin = os.Stdin
+	if out, err := cmd.Output(); err == nil {
+		os.Setenv("GPG_TTY", strings.TrimSpace(string(out)))
+	}
+}
+
+func firstLine(s string) string {
+	line, _, _ := strings.Cut(s, "\n")
+	return line
+}
