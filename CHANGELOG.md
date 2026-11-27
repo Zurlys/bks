@@ -6,6 +6,8 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 
 ### Changed
 
+- Releases are signed with a Developer ID and notarized by Apple: a copy downloaded with a browser runs without the `xattr` step.
+- `bks` and `bks-mac` run with the hardened runtime, in releases and `make` builds: macOS ignores `DYLD_*` code injection into them and refuses debuggers.
 - Before 1.0.0, alpha and beta releases are published as normal releases, so the newest one shows as Latest on the repository page.
 
 ## [0.1.0-alpha.2] - 2026-11-27

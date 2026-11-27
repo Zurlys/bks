@@ -41,7 +41,7 @@ tar -xzf \$name.tar.gz
 ln -s "\$PWD/\$name/bks" ~/.local/bin/bks   # keep bks next to bks-mac
 \`\`\`
 
-The binaries are ad-hoc signed, not notarized. Files downloaded with a browser get a quarantine flag that makes macOS refuse to run them; \`curl\` does not set it. If you used a browser: \`xattr -dr com.apple.quarantine bks_${v}_darwin_*\`.
+The binaries are signed with a Developer ID and notarized by Apple; the first time a downloaded copy runs, macOS checks that with Apple online. If macOS still refuses to run it (for example offline): \`xattr -dr com.apple.quarantine bks_${v}_darwin_*\`.
 
 Requires macOS 13 or later and GnuPG (tested with GPG Suite). See the [guide](https://zurlys.github.io/bks/guide.html).
 NOTES

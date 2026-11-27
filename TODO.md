@@ -1,6 +1,10 @@
 # TODO
 
-macOS comes first: these start once the macOS releases are settled.
+macOS comes first: the Linux and BSD work starts once the macOS releases are settled.
+
+## macOS
+
+- [ ] Before trusting `bks-mac`, check that it is signed by the same Developer ID team as `bks` (on top of "only the binary next to bks").
 
 ## Linux and BSD
 

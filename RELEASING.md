@@ -34,27 +34,69 @@ Promise at every version: a release can read every vault written by an earlier o
 
    `git tag -s` signs with `user.signingkey`, or with gpg's default key when that is unset — set the key you want once per clone: `git config user.signingkey <fingerprint>`.
 
-5. Watch it: `gh run watch` (or the Actions tab). When it finishes, the release is on the [releases page](https://github.com/Zurlys/bks/releases).
+5. Approve it: once the tests pass, the `release` job waits for you. Open the run (Actions tab, or the link in GitHub's e-mail), choose **Review deployments**, tick `release`, **Approve and deploy**. When it finishes, the release is on the [releases page](https://github.com/Zurlys/bks/releases).
 
 ## What the release workflow does
 
+The **test** job has no access to any signing secret:
+
 1. Checks the tag looks like `vX.Y.Z[-pre]` and that CHANGELOG.md has a section for it.
 2. Runs the full test suite.
-3. Builds `bks` and `bks-mac` for arm64 and x86_64, stamps the version (`bks version` prints the tag), ad-hoc signs them and packs two archives with LICENSE, README, GUIDE and SECURITY: `bks_X.Y.Z_darwin_arm64.tar.gz` (Apple silicon) and `bks_X.Y.Z_darwin_universal.tar.gz` (Apple silicon and Intel, joined with `lipo`), plus `SHA256SUMS` for both.
-4. Checks each archive's binaries contain the right architectures and report the right version.
-5. Creates a signed build-provenance attestation for each archive: anyone can run `gh attestation verify <archive> --repo Zurlys/bks` to prove it was built by this workflow from this tag.
-6. Publishes the GitHub release with the archives, the checksums and the notes: the changelog section, a link to all changes since the previous release, and install steps. From 1.0.0 on, a `-` in the tag makes it a pre-release.
 
-`scripts/build-release.sh vX.Y.Z` and `scripts/release-notes.sh X.Y.Z` run the same steps locally (output in `dist/`, which git ignores).
+The **release** job runs after the tests pass and you approve the `release` environment:
+
+1. Imports the Developer ID certificate into a temporary keychain, builds `bks` and `bks-mac` for arm64 and x86_64, stamps the version (`bks version` prints the tag), signs them with the Developer ID, the hardened runtime and a secure timestamp, deletes the keychain, and packs two archives with LICENSE, README, GUIDE and SECURITY: `bks_X.Y.Z_darwin_arm64.tar.gz` (Apple silicon) and `bks_X.Y.Z_darwin_universal.tar.gz` (Apple silicon and Intel, joined with `lipo`), plus `SHA256SUMS` for both.
+2. Notarizes all four binaries in one submission, and fails unless Apple answers `Accepted` (the notarization log is printed otherwise).
+3. Checks the architectures, the version, the hardened runtime, the team's Developer ID signature with its timestamp, and that Apple knows the binaries as notarized.
+4. Creates a signed build-provenance attestation for the archives: anyone can run `gh attestation verify <archive> --repo Zurlys/bks` to prove it was built by this workflow from this tag.
+5. Publishes the GitHub release with the archives, the checksums and the notes: the changelog section, a link to all changes since the previous release, and install steps. From 1.0.0 on, a `-` in the tag makes it a pre-release.
+
+Locally, `scripts/build-release.sh vX.Y.Z` builds the same archives signed ad-hoc (output in `dist/`, which git ignores), `scripts/check-release.sh vX.Y.Z` checks them, and `scripts/release-notes.sh X.Y.Z` prints the notes.
 
 ## If something goes wrong
 
 - **The workflow failed before publishing:** fix it on `main`, then move the tag: `git tag -d vX && git push origin :refs/tags/vX`, re-tag, push again.
 - **A bad release was published:** don't reuse its version. Delete or edit the release text if needed, fix, and release the next version.
 
-## Signing and notarization (later)
+## Signing and notarization
 
-Binaries are ad-hoc signed and not notarized, so a browser-downloaded archive is quarantined by macOS; the release notes explain `curl` and `xattr`. With an Apple Developer ID, the workflow can sign with `codesign --options runtime --sign "Developer ID Application: …"` and notarize with `xcrun notarytool submit … --wait`, using the certificate and an App Store Connect API key stored as repository secrets. The Touch ID enrolment does not depend on the signature, so switching to Developer ID signing needs no re-enrolment.
+Releases are signed with a Developer ID Application certificate (hardened runtime, secure timestamp) and notarized by Apple, so macOS runs a downloaded copy without complaint. Nothing is stapled (a ticket cannot be attached to a bare executable): the first time a downloaded copy runs, macOS asks Apple online. Local builds (`make`, `scripts/build-release.sh`) are signed ad-hoc with the same hardened runtime. The Touch ID enrolment does not depend on the signature.
+
+Everything signing needs lives in the `release` environment (Settings → Environments), which only serves `v*` tags and needs your approval for every run; each secret reaches only the step that uses it.
+
+| Name | Kind | What |
+|---|---|---|
+| `DEVELOPER_ID_P12` | secret | the Developer ID Application certificate and its private key, as a base64 `.p12` |
+| `DEVELOPER_ID_P12_PASSWORD` | secret | the `.p12` password |
+| `NOTARY_KEY_P8` | secret | an App Store Connect API key (`.p8`) used for nothing but notarizing bks |
+| `NOTARY_KEY_ID` | secret | its key ID |
+| `NOTARY_ISSUER_ID` | secret | its issuer ID (team keys; leave it unset for an individual key) |
+| `APPLE_TEAM_ID` | variable | the team ID the signature must carry |
+
+Setting it up (once, and again when the certificate expires):
+
+1. **Certificate.** Xcode → Settings → Accounts → your team → Manage Certificates → **+** → **Developer ID Application** (only the Account Holder can). In Keychain Access, under My Certificates, export "Developer ID Application: …" (certificate with its private key) as a `.p12` with a strong password.
+2. **API key.** App Store Connect → Users and Access → Integrations → Team Keys → **+**, access **Developer**. Download the `.p8` (possible only once) and note the key ID and the issuer ID.
+3. **Check the key** before the first release; a wrong role or issuer shows up here as 401/403:
+
+   ```sh
+   xcrun notarytool history --key AuthKey_XXXXXXXXXX.p8 --key-id XXXXXXXXXX --issuer <issuer-id>
+   ```
+
+4. **Store them** from a terminal (the prompts keep values out of the shell history):
+
+   ```sh
+   base64 -i DeveloperID.p12 | gh secret set DEVELOPER_ID_P12 --env release --repo Zurlys/bks
+   gh secret set DEVELOPER_ID_P12_PASSWORD --env release --repo Zurlys/bks   # prompts
+   gh secret set NOTARY_KEY_P8 --env release --repo Zurlys/bks < AuthKey_XXXXXXXXXX.p8
+   gh secret set NOTARY_KEY_ID --env release --repo Zurlys/bks                # prompts
+   gh secret set NOTARY_ISSUER_ID --env release --repo Zurlys/bks             # prompts
+   gh variable set APPLE_TEAM_ID --env release --repo Zurlys/bks --body XXXXXXXXXX
+   ```
+
+5. Delete the `.p12` and `.p8` files (new ones can always be made) or keep them offline.
+
+If any of them leaks: revoke the certificate (developer.apple.com → Certificates) and the API key (App Store Connect → Integrations), make new ones, update the secrets, and publish a new release.
 
 ## Homebrew (later)
 

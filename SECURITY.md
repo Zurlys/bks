@@ -49,10 +49,16 @@ Only the latest `main` is supported; there are no maintained release branches ye
 ### Memory, clipboard and process
 
 - **Locking re-executes the process** (`execve`) into a fresh, locked instance: Go cannot reliably wipe strings, a new process image can.
-- Core dumps are disabled, `PT_DENY_ATTACH` is set, the umask is `077`, files are `0600` and directories `0700`. No secret is ever written to a temp file; editing happens in the UI only.
+- Core dumps are disabled, `PT_DENY_ATTACH` is set, the umask is `077`, files are `0600` and directories `0700`. `bks` and `bks-mac` run with the hardened runtime (releases and `make` builds alike): macOS ignores `DYLD_*` library injection into them and refuses debuggers. No secret is ever written to a temp file; editing happens in the UI only.
 - **Clipboard:** copies go through the helper with `.currentHostOnly` (no Universal Clipboard) and the `org.nspasteboard.ConcealedType` / `TransientType` markers; the helper verifies the markers and withdraws the copy otherwise. A detached clearer receives only the pasteboard change count (or, without the helper, a SHA-256 on stdin) and clears after 30 s only if nothing else was copied — it never reads the clipboard's contents.
 - The helper is trusted only as the binary built next to `bks` (or an explicit `BKS_HELPER`), never from `PATH`: it handles U and every copied password.
 - Screen lock, screensaver, sleep and user switch lock the UI; so does the screen-lock watcher dying, so a killed watcher cannot leave the vault open.
+
+### Releases
+
+- Built from the tag by the [release workflow](.github/workflows/release.yml) on GitHub-hosted runners; the tests run in a separate job with no access to any signing secret.
+- From the first release after 0.1.0-alpha.2: signed with a Developer ID Application certificate (hardened runtime, secure timestamp) and notarized by Apple (0.1.0-alpha.1 and 0.1.0-alpha.2 are ad-hoc signed). Each archive is listed in `SHA256SUMS` and covered by a build-provenance attestation: `gh attestation verify <archive> --repo Zurlys/bks` proves it was built by that workflow from that tag, and `codesign -dv --verbose=2 bks` shows the Developer ID and team.
+- The certificate and the notarization key live in a GitHub environment that serves only `v*` tags and needs the maintainer's approval for every run; each secret reaches only the step that uses it, and the signing keychain is deleted right after signing. The maintainer's GitHub account is therefore part of what you trust, as it is for the source.
 
 ## Known findings and accepted risks
 
