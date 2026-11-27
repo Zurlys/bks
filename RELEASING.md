@@ -37,10 +37,10 @@ Promise at every version: a release can read every vault written by an earlier o
 
 1. Checks the tag looks like `vX.Y.Z[-pre]` and that CHANGELOG.md has a section for it.
 2. Runs the full test suite.
-3. Builds `bks` and `bks-mac` for arm64 and x86_64, joins them into universal binaries, ad-hoc signs them, stamps the version (`bks version` prints the tag), and packs `bks_X.Y.Z_darwin_universal.tar.gz` with LICENSE, README, GUIDE and SECURITY, plus `SHA256SUMS`.
-4. Checks both binaries contain both architectures and report the right version.
-5. Creates a signed build-provenance attestation for the archive: anyone can run `gh attestation verify <archive> --repo Zurlys/bks` to prove it was built by this workflow from this tag.
-6. Publishes the GitHub release with the archive, the checksums and the notes (`-` in the tag ⇒ pre-release).
+3. Builds `bks` and `bks-mac` for arm64 and x86_64, stamps the version (`bks version` prints the tag), ad-hoc signs them and packs two archives with LICENSE, README, GUIDE and SECURITY: `bks_X.Y.Z_darwin_arm64.tar.gz` (Apple silicon) and `bks_X.Y.Z_darwin_universal.tar.gz` (Apple silicon and Intel, joined with `lipo`), plus `SHA256SUMS` for both.
+4. Checks each archive's binaries contain the right architectures and report the right version.
+5. Creates a signed build-provenance attestation for each archive: anyone can run `gh attestation verify <archive> --repo Zurlys/bks` to prove it was built by this workflow from this tag.
+6. Publishes the GitHub release with the archives, the checksums and the notes: the changelog section, a link to all changes since the previous release, and install steps. A `-` in the tag makes it a pre-release.
 
 `scripts/build-release.sh vX.Y.Z` and `scripts/release-notes.sh X.Y.Z` run the same steps locally (output in `dist/`, which git ignores).
 

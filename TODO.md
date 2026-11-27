@@ -19,7 +19,7 @@ The Go code already cross-compiles for Linux, FreeBSD, OpenBSD and NetBSD; what 
 
 ## Multiarch
 
-- [ ] Release archives for `linux_amd64`, `linux_arm64`, `freebsd_amd64`, `freebsd_arm64`, `openbsd_amd64`, `openbsd_arm64` next to the macOS universal one, all in `SHA256SUMS` and the provenance attestation.
+- [ ] Release archives for `linux_amd64`, `linux_arm64`, `freebsd_amd64`, `freebsd_arm64`, `openbsd_amd64`, `openbsd_arm64` next to the macOS ones, all in `SHA256SUMS` and the provenance attestation.
 - [ ] Homebrew formula: install `bks-mac` only on macOS so it also works on Linux.
 
 ## Not planned

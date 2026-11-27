@@ -43,7 +43,7 @@ A terminal password manager for macOS. Your passwords live in **one GPG-encrypte
 
 ### A release
 
-Download the universal (Apple silicon and Intel) archive from [Releases](https://github.com/Zurlys/bks/releases); each release's notes give the exact commands to download, verify (checksum and GitHub build provenance) and install it.
+Download an archive from [Releases](https://github.com/Zurlys/bks/releases): `darwin_arm64` for Apple silicon, `darwin_universal` for Apple silicon and Intel; each release's notes give the exact commands to download, verify (checksum and GitHub build provenance) and install it.
 
 ### From source
 
