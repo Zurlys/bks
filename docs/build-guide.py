@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Turn GUIDE.md into docs/guide.html for the website (make site).
+"""Turn GUIDE.md into docs/guide.html for the website (make site), and
+stamp every page's style.css / demo.js link with a hash of the file, so
+browsers fetch a changed file instead of a cached old one.
 
 Handles exactly the Markdown that GUIDE.md uses: headings, paragraphs, lists,
 tables, fenced code, inline code, bold and links. Standard library only.
 """
+import hashlib
 import html
 import os
 import re
@@ -12,6 +15,20 @@ import re
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, os.pardir, "GUIDE.md")
 DST = os.path.join(HERE, "guide.html")
+
+ASSETS = ("style.css", "demo.js")
+
+
+def stamp(name):
+    with open(os.path.join(HERE, name), "rb") as f:
+        return "%s?v=%s" % (name, hashlib.sha256(f.read()).hexdigest()[:10])
+
+
+def stamp_links(text):
+    for a in ASSETS:
+        text = re.sub(r'(href|src)="%s(\?v=[0-9a-f]+)?"' % re.escape(a), lambda m, a=a: '%s="%s"' % (m.group(1), stamp(a)), text)
+    return text
+
 
 lines = open(SRC, encoding="utf-8").read().split("\n")
 
@@ -130,7 +147,10 @@ page = """<!doctype html>
 <header class="band">
   <nav class="band-inner" aria-label="Site">
     <a class="home" href="./">bks</a>
-    <a href="https://github.com/Zurlys/bks">Source on GitHub</a>
+    <a href="guide.html" aria-current="page">Guide</a>
+    <a href="https://github.com/Zurlys/bks/blob/main/DESIGN.md">How it works</a>
+    <a href="https://github.com/Zurlys/bks/blob/main/SECURITY.md">Security model</a>
+    <a href="https://github.com/Zurlys/bks">Source</a>
   </nav>
 </header>
 <main class="guide">
@@ -144,4 +164,12 @@ page = """<!doctype html>
 </html>
 """ % {"title": html.escape(title), "body": "\n".join(body)}
 
-open(DST, "w", encoding="utf-8").write(page)
+open(DST, "w", encoding="utf-8").write(stamp_links(page))
+
+index = os.path.join(HERE, "index.html")
+with open(index, encoding="utf-8") as f:
+    old = f.read()
+new = stamp_links(old)
+if new != old:
+    with open(index, "w", encoding="utf-8") as f:
+        f.write(new)

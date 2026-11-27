@@ -16,7 +16,7 @@ test: all
 
 site: docs/guide.html
 
-docs/guide.html: GUIDE.md docs/build-guide.py
+docs/guide.html: GUIDE.md docs/build-guide.py docs/style.css docs/demo.js docs/index.html
 	python3 docs/build-guide.py
 
 clean:
