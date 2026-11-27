@@ -103,6 +103,8 @@ Touch ID is tied to one Mac's Secure Enclave, so it is **not** a backup. With 1 
 gpg -d vault.gpg | jq .
 ```
 
+With GnuPG 2.5, `gpg -d` first asks for "the passphrase for decryption": that is the vault's Touch ID secret, which you don't know. Type anything there; gpg then asks for your key's passphrase. (bks itself never shows that prompt.)
+
 To add a second way in (a backup key, a YubiKey): `bks recipients add <fingerprint>`.
 
 ## Limitations

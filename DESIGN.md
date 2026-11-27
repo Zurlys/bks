@@ -49,6 +49,7 @@ vault.gpg = OpenPGP message (AES-256) containing JSON
 ```
 
 - **U** is 32 random bytes, stored inside the JSON too (so after a GPG unlock bks can rewrite both ways in and enrol another Mac). It is handed to gpg as 64 hex characters on file descriptor 3.
+- **Unlocking with your key never sees the U packet.** bks hands gpg the file without its symmetric packet (only the leading session-key packets are parsed; the encrypted data is copied byte for byte). GnuPG 2.5 tries a passphrase packet before key packets and would otherwise first ask for U, which you don't know.
 - **Two GnuPG homes, never mixed.** Encryption and every unlock with U run in bks's own home, which holds public keys only — gpg there cannot offer U to a secret key or a smartcard. Your own home (`~/.gnupg`) is used only to decrypt with your key, through normal pinentry.
 - **Recipients are pinned to exact subkeys** (`--recipient <subkey-fingerprint>!`), with their armored public keys stored in the vault and imported into bks's home on each Mac. Adding a subkey to a key later never silently changes who can open the vault.
 - **Encryption flags:** `--encrypt --symmetric --cipher-algo AES256 --s2k-cipher-algo AES256 --s2k-digest-algo SHA512 --no-symkey-cache --trust-model always --pinentry-mode loopback --passphrase-fd 3`. All three algorithm flags are required: on GnuPG 2.2, `--cipher-algo AES256` alone produces a file whose symmetric packet fails ("Bad session key").

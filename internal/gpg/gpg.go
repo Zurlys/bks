@@ -146,9 +146,10 @@ func (g GPG) DecryptWithPassphrase(ctx context.Context, msg []byte, passphrase s
 }
 
 // Decrypt opens a message with a secret key; gpg-agent asks through the
-// normal pinentry, which says which key or card it wants.
+// normal pinentry, which says which key or card it wants. Passphrase packets
+// are removed first, so gpg cannot ask for a passphrase instead.
 func (g GPG) Decrypt(ctx context.Context, msg []byte) ([]byte, error) {
-	return g.exec(ctx, "decrypt", msg, nil, "--decrypt")
+	return g.exec(ctx, "decrypt", WithoutPassphrasePackets(msg), nil, "--decrypt")
 }
 
 var (
