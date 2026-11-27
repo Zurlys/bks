@@ -4,6 +4,10 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
+### Changed
+
+- Before 1.0.0, alpha and beta releases are published as normal releases, so the newest one shows as Latest on the repository page.
+
 ## [0.1.0-alpha.2] - 2026-11-27
 
 ### Added

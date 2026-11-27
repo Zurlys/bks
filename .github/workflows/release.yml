@@ -66,7 +66,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           pre=""
-          case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
+          case "$GITHUB_REF_NAME" in
+            v0.*) ;;                  # before 1.0.0 every release is a normal one: the newest shows as Latest
+            *-*) pre="--prerelease" ;; # from 1.0.0: v1.1.0-rc.1 must not replace v1.0.0 as Latest
+          esac
           gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/SHA256SUMS \
             --verify-tag $pre \
             --title "bks $GITHUB_REF_NAME" \
