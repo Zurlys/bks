@@ -223,3 +223,29 @@ func TestParseKeysAndPick(t *testing.T) {
 		t.Error("expiry check wrong")
 	}
 }
+
+// Unlocking with the GPG key must ask for exactly one thing: that key's
+// passphrase. A GnuPG that asked for the vault's unlock secret first would
+// show users a prompt they cannot answer.
+func TestDoorOneAsksOnlyForTheKey(t *testing.T) {
+	gpgtest.Isolate(t)
+	userHome, bksHome := gpgtest.Home(t), gpgtest.Home(t)
+	k := gpgtest.NewKey(t, userHome, "door1@test.invalid", "key-pass-123")
+	gpgtest.CopyPublic(t, userHome, bksHome, k.Primary)
+	user, bks := gpg.GPG{Home: userHome}, gpg.GPG{Home: bksHome}
+
+	msg, err := bks.Encrypt(ctx, []byte("x"), []string{k.Subkey}, randomHex(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	gpgtest.PinentryLog(t, userHome) // forget prompts from key generation
+	_ = exec.Command("gpgconf", "--homedir", userHome, "--kill", "gpg-agent").Run()
+
+	if _, err := user.Decrypt(ctx, msg); err != nil {
+		t.Fatalf("door 1: %v\npinentry was asked:\n%s", err, gpgtest.PinentryLog(t, userHome))
+	}
+	log := gpgtest.PinentryLog(t, userHome)
+	if n := strings.Count(log, "GETPIN"); n != 1 || !strings.Contains(log, "secret key") {
+		t.Fatalf("door 1 should ask once, for the key's passphrase; pinentry was asked %d times:\n%s", n, log)
+	}
+}

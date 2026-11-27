@@ -53,6 +53,9 @@ type Key struct {
 // passphrase may be empty (no protection).
 func NewKey(t testing.TB, home, email, passphrase string) Key {
 	t.Helper()
+	// Answer every later prompt in this home, so no terminal pinentry is
+	// ever started (CI machines have no terminal).
+	UsePinentry(t, home, passphrase)
 	gpg(t, home, "--pinentry-mode", "loopback", "--passphrase", passphrase,
 		"--quick-gen-key", "test <"+email+">", "future-default", "default", "never")
 	out := gpg(t, home, "--with-colons", "--fixed-list-mode", "--list-keys", email)
@@ -112,9 +115,11 @@ func UsePinentry(t testing.TB, home, passphrase string) {
 		t.Fatal("UsePinentry: passphrase must be plain single-line text")
 	}
 	script := filepath.Join(home, "pinentry.sh")
+	log := filepath.Join(home, "pinentry.log")
 	body := "#!/bin/sh\n" +
 		"echo 'OK fake pinentry'\n" +
 		"while read -r cmd rest; do\n" +
+		"  case \"$cmd\" in SETDESC|GETPIN|CONFIRM) echo \"$cmd $rest\" >> '" + log + "';; esac\n" +
 		"  case \"$cmd\" in\n" +
 		"    GETPIN) echo 'D " + passphrase + "'; echo OK;;\n" +
 		"    BYE) echo OK; exit 0;;\n" +
@@ -128,4 +133,14 @@ func UsePinentry(t testing.TB, home, passphrase string) {
 		t.Fatal(err)
 	}
 	_ = exec.Command("gpgconf", "--homedir", home, "--kill", "gpg-agent").Run()
+}
+
+// PinentryLog returns what the fake pinentry in home was asked (SETDESC,
+// GETPIN and CONFIRM lines), and clears it.
+func PinentryLog(t testing.TB, home string) string {
+	t.Helper()
+	p := filepath.Join(home, "pinentry.log")
+	b, _ := os.ReadFile(p)
+	os.Remove(p)
+	return string(b)
 }
