@@ -41,6 +41,12 @@ A terminal password manager for macOS. Your passwords live in **one GPG-encrypte
 
 ## Install
 
+### A release
+
+Download the universal (Apple silicon and Intel) archive from [Releases](https://github.com/Zurlys/bks/releases); each release's notes give the exact commands to download, verify (checksum and GitHub build provenance) and install it.
+
+### From source
+
 ```sh
 git clone https://github.com/Zurlys/bks.git
 cd bks
@@ -119,7 +125,10 @@ To add a second way in (a backup key, a YubiKey): `bks recipients add <fingerpri
 
 ```sh
 make test      # builds both binaries and runs all tests
+make site      # rebuilds docs/guide.html from GUIDE.md
 ```
+
+How releases are made: [RELEASING.md](RELEASING.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 
 Tests use throwaway GnuPG homes (never your keyring), a fake pinentry, and a private pasteboard (never your clipboard).
 

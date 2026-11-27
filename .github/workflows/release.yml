@@ -1,0 +1,70 @@
+name: release
+
+# Only a pushed version tag (v1.2.3, v0.1.0-alpha.1) publishes a release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write     # create the GitHub release
+      id-token: write     # sign the build provenance
+      attestations: write
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+
+      - name: Check the tag and its changelog section
+        run: |
+          case "$GITHUB_REF_NAME" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "not a version tag: $GITHUB_REF_NAME"; exit 1 ;;
+          esac
+          scripts/release-notes.sh "${GITHUB_REF_NAME#v}" > release-notes.md
+
+      - name: Install GnuPG
+        run: brew install gnupg
+
+      - name: Test
+        run: make test
+
+      - name: Build
+        run: scripts/build-release.sh "$GITHUB_REF_NAME"
+
+      - name: Check the built binaries
+        run: |
+          d="dist/bks_${GITHUB_REF_NAME#v}_darwin_universal"
+          for b in bks bks-mac; do
+            lipo -archs "$d/$b" | grep -qw arm64
+            lipo -archs "$d/$b" | grep -qw x86_64
+          done
+          test "$("$d/bks" version)" = "bks $GITHUB_REF_NAME"
+          "$d/bks-mac" version
+
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*.tar.gz
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pre=""
+          case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/SHA256SUMS \
+            --verify-tag $pre \
+            --title "bks $GITHUB_REF_NAME" \
+            --notes-file release-notes.md

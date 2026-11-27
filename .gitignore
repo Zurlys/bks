@@ -16,3 +16,7 @@
 
 # private notes (personal key details, decision log) — never published
 *.private.md
+
+# release builds
+/dist/
+/release-notes.md

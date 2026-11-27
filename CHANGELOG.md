@@ -1,0 +1,23 @@
+# Changelog
+
+All notable changes to bks. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/): before 1.0.0 anything may change, but every release can still read vaults written by earlier ones.
+
+## [Unreleased]
+
+## [0.1.0-alpha.1] - 2026-11-27
+
+First public pre-release. Feedback and bug reports are very welcome; security issues go to [private reporting](https://github.com/Zurlys/bks/blob/main/SECURITY.md).
+
+### Added
+
+- A single GPG-encrypted vault file that opens with your GPG key (pinentry) or with Touch ID (a secret sealed by the Mac's Secure Enclave), and stays readable with plain `gpg -d`.
+- Terminal UI: fuzzy search (any order, accents ignored, `#tags`), copy password / username / one-time code, reveal for 10 seconds, live TOTP codes, editing with password history, delete with confirmation.
+- Locking on screen lock, screensaver, sleep, user switch, idle (5 min) and after 8 hours; locking restarts the process.
+- A clipboard that stays on this Mac (no Universal Clipboard), is hidden from clipboard-history apps and is cleared after 30 seconds.
+- Several Macs: edits are merged, older copies arriving through sync cannot roll anything back, conflict copies from iCloud, Syncthing and Dropbox are merged.
+- `bks init` with a key picker or a wizard for a new GPG key and a checklist of what to back up.
+- Command line: `get`, `otp`, `ls`, `add`, `gen` (characters or EFF diceware), `recipients add/remove`, `rotate`, `touchid`, `version`.
+- 1Password import from `.1pux` exports, with a dry run that shows no secrets.
+
+[Unreleased]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.1...HEAD
+[0.1.0-alpha.1]: https://github.com/Zurlys/bks/releases/tag/v0.1.0-alpha.1
