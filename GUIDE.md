@@ -65,7 +65,7 @@ Just type: the search box always has the focus.
 - Letters must appear in that order within one field, but may have gaps: `gtlb` finds "GitLab".
 - Accents don't matter: `petraite` finds "Petraitė".
 - `#work` finds entries tagged `work`; `#work git` finds entries tagged `work` that also match `git`.
-- Searched: title, username, the host part of URLs, tags and the names of custom fields. Never searched: passwords, notes, one-time-code secrets and field values.
+- Searched: title, username, the host part of URLs, tags, the names of custom fields and the short, one-line values of fields that are not secret (e.g. the username or server of an imported 1Password server item). Never searched: passwords, notes, one-time-code secrets and secret fields.
 
 Best matches come first. `↑` `↓` move, `esc` clears the search (a second `esc` quits).
 

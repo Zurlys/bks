@@ -21,7 +21,7 @@ func testVault(t *testing.T) *vault.Vault {
 		{Title: "Bank", Username: "1234567", URLs: []string{"bank.example"},
 			Password: "zebra-password", Notes: "zebra notes",
 			OTP:    "otpauth://totp/Bank:x?secret=ZEBRAZEBRA",
-			Fields: []vault.Field{{Name: "PIN", Value: "zebra-pin", Secret: true}, {Name: "recovery codes", Value: "zebra"}}},
+			Fields: []vault.Field{{Name: "PIN", Value: "zebra-pin", Secret: true}, {Name: "recovery codes", Value: "printed, in the safe"}}},
 		{Title: "Grafana integration test", Username: "ci"},
 	} {
 		if _, err := v.Add(e, time.Now()); err != nil {
@@ -82,8 +82,8 @@ func TestSecretsAreNeverSearched(t *testing.T) {
 	if got := Find(v, "zebra"); len(got) != 0 {
 		t.Fatalf("query matched secret content: %v", titles(got))
 	}
-	// field names and URL hosts are searchable
-	for _, q := range []string{"recovery codes", "pin", "bank.example"} {
+	// field names, URL hosts and visible (non-secret) field values are searchable
+	for _, q := range []string{"recovery codes", "pin", "bank.example", "in the safe"} {
 		if got := titles(Find(v, q)); len(got) == 0 || got[0] != "Bank" {
 			t.Errorf("Find(%q) = %v, want Bank first", q, got)
 		}
@@ -145,4 +145,28 @@ func contains(xs []string, x string) bool {
 		}
 	}
 	return false
+}
+
+// 1Password keeps the username of non-login items (servers, databases,
+// email accounts) in a plain field: its value must be searchable.
+func TestNonSecretFieldValues(t *testing.T) {
+	es := []vault.Entry{
+		{Title: "Cloud VPN", Fields: []vault.Field{{Name: "username", Value: "name.surname@cloud.local"}}},
+		{Title: "Vault token", Fields: []vault.Field{{Name: "token", Value: "s3cr3t-local-value", Secret: true}}},
+		{Title: "Long note", Fields: []vault.Field{{Name: "info", Value: "name wrote this\nfrom a local machine"}}},
+		{Title: "Huge", Fields: []vault.Field{{Name: "info", Value: strings.Repeat("name local ", 20)}}},
+	}
+	for _, q := range []string{"name local", "name surname local", "name.surname@local", "cloud.local"} {
+		got := Search(es, q)
+		if len(got) != 1 || got[0].Entry.Title != "Cloud VPN" {
+			var names []string
+			for _, m := range got {
+				names = append(names, m.Entry.Title)
+			}
+			t.Errorf("%q → %v, want only Cloud VPN", q, names)
+		}
+	}
+	if got := Search(es, "s3cr3t"); len(got) != 0 {
+		t.Errorf("a secret field value was searched: %v", got[0].Entry.Title)
+	}
 }

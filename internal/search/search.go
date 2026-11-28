@@ -32,8 +32,9 @@ const (
 	scoreGapExtension = -1
 	bonusBoundary     = scoreMatch / 2 // match right after a separator or at field start
 	bonusConsecutive  = -(scoreGapStart + scoreGapExtension)
-	firstCharFactor   = 2 // a boundary bonus on the token's first char counts double
-	bonusTitle        = 4 // prefer title matches over equal matches elsewhere
+	firstCharFactor   = 2   // a boundary bonus on the token's first char counts double
+	bonusTitle        = 4   // prefer title matches over equal matches elsewhere
+	maxFieldValue     = 128 // longer field values are not searched
 )
 
 // Match is a ranked entry.
@@ -90,6 +91,13 @@ func scoreEntry(e *vault.Entry, tokens []string) (int, bool) {
 	}
 	for _, f := range e.Fields {
 		add(f.Name)
+		// Non-secret values are things like a username, email or server
+		// that 1Password keeps in fields for non-login items. Secret values
+		// are never searched; long or multi-line text would match almost
+		// any query as a subsequence, so it is left out too.
+		if !f.Secret && len([]rune(f.Value)) <= maxFieldValue && !strings.ContainsAny(f.Value, "\r\n") {
+			add(f.Value)
+		}
 	}
 	var tags [][]rune
 	for _, t := range e.Tags {

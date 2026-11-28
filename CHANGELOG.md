@@ -14,6 +14,7 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 
 ### Changed
 
+- Search also matches the short, one-line values of non-secret fields: the username or email of imported 1Password server, database and email items is now found. Secret fields, passwords and notes are still never searched.
 - `BKS_VAULT` takes a vault name or a path; `BKS_STATE_DIR` applies only together with a path.
 
 - Releases are signed with a Developer ID and notarized by Apple: a copy downloaded with a browser runs without the `xattr` step.
