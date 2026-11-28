@@ -1,5 +1,5 @@
 # bks = Go CLI/TUI; bks-mac = Swift helper (Touch ID, screen-lock events, clipboard).
-.PHONY: all test clean site install
+.PHONY: all test clean site install FORCE
 
 all: bin/bks bin/bks-mac
 
@@ -9,7 +9,9 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null)
 
 # Both are signed ad-hoc with the hardened runtime, as in releases: macOS
 # ignores DYLD_* code injection and refuses debuggers.
-bin/bks: $(shell find cmd internal -name '*.go') go.mod go.sum
+# Always rebuilt (Go's build cache keeps it quick), so the version stamp
+# follows new commits and tags even when no source file changed.
+bin/bks: FORCE
 	go build -trimpath -ldflags "-X main.version=$(VERSION)" -o $@ ./cmd/bks
 	codesign --force --options runtime --timestamp=none --identifier io.github.zurlys.bks --sign - $@
 
@@ -35,3 +37,5 @@ docs/guide.html: GUIDE.md docs/build-guide.py docs/style.css docs/demo.js docs/i
 
 clean:
 	rm -rf bin
+
+FORCE:
