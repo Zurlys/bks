@@ -63,25 +63,12 @@ func New(vaultPath, stateDir string, user gpg.GPG) *Store {
 	}
 }
 
-// Default uses $BKS_VAULT and $BKS_STATE_DIR, else
-// ~/.local/share/bks/vault.gpg and ~/.local/state/bks, and the user's
-// default GnuPG home.
-func Default() (*Store, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	vp := os.Getenv("BKS_VAULT")
-	if vp == "" {
-		vp = filepath.Join(home, ".local", "share", "bks", "vault.gpg")
-	}
-	sd := os.Getenv("BKS_STATE_DIR")
-	if sd == "" {
-		sd = filepath.Join(home, ".local", "state", "bks")
-	}
-	s := New(vp, sd, gpg.GPG{})
+// Open returns the Store for a vault file and its per-Mac state directory
+// (see internal/vaults), using the user's default GnuPG home.
+func Open(vaultPath, stateDir string) (*Store, error) {
+	s := New(vaultPath, stateDir, gpg.GPG{})
 	if n := len(filepath.Join(s.BKS.Home, "S.gpg-agent.browser")); n > maxSocketPath {
-		return nil, fmt.Errorf("state dir path too long for gpg-agent sockets (%d bytes): set BKS_STATE_DIR shorter", n)
+		return nil, fmt.Errorf("state dir path too long for gpg-agent sockets (%d bytes): %s", n, stateDir)
 	}
 	return s, nil
 }
@@ -197,14 +184,18 @@ func (s *Store) readVault() (ct []byte, readOnly bool, err error) {
 	if err == nil {
 		return ct, false, nil
 	}
+	hint := ""
+	if errors.Is(err, fs.ErrPermission) {
+		hint = "; macOS blocked access: allow your terminal app in System Settings → Privacy & Security → Files and Folders (iCloud Drive or the vault's folder)"
+	}
 	if lg, lerr := os.ReadFile(s.lastGoodPath()); lerr == nil {
-		s.warn("cannot read %s (%v): showing this Mac's last good copy, read-only", s.VaultPath, err)
+		s.warn("cannot read %s (%v): showing this Mac's last good copy, read-only%s", s.VaultPath, err, hint)
 		return lg, true, nil
 	}
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, false, fmt.Errorf("%w (looked at %s)", ErrNoVault, s.VaultPath)
 	}
-	return nil, false, err
+	return nil, false, fmt.Errorf("%w%s", err, hint)
 }
 
 // open checks a decrypted vault before anything from it is trusted: the
@@ -580,6 +571,44 @@ func (s *Store) UnlockTouchID(ctx context.Context, sealer Sealer) (*Session, err
 		return nil, err
 	}
 	return s.UnlockWithSecret(ctx, u)
+}
+
+// CopyTo copies the vault file to dest, a new file whose folder is created,
+// and checks the copy byte for byte. The vault file itself stays.
+func (s *Store) CopyTo(dest string) error {
+	unlock, err := s.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	src, err := os.ReadFile(s.VaultPath)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(dest); err == nil {
+		return fmt.Errorf("%w at %s", ErrExists, dest)
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return err
+	}
+	dir := filepath.Dir(dest)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	tmp, err := writeTemp(dir, filepath.Base(dest), src)
+	if err != nil {
+		return err
+	}
+	if err := os.Rename(tmp, dest); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	syncDir(dir)
+	got, err := os.ReadFile(dest)
+	if err != nil || sha256.Sum256(got) != sha256.Sum256(src) {
+		os.Remove(dest)
+		return fmt.Errorf("the copy at %s did not read back the same (%v); it was removed", dest, err)
+	}
+	return nil
 }
 
 func (s *Store) devicePath() string { return filepath.Join(s.StateDir, "device.json") }

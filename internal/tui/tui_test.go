@@ -567,3 +567,14 @@ func TestFormInNarrowTerminal(t *testing.T) {
 		}
 	}
 }
+
+func TestHeaderShowsVaultName(t *testing.T) {
+	h := newHarness(t)
+	if strings.Contains(firstLine(h.m.View()), "·") && strings.Contains(firstLine(h.m.View()), "work") {
+		t.Fatal("a vault name shown without one set")
+	}
+	h.m.opt.Name = "work"
+	if top := firstLine(h.m.View()); !strings.Contains(top, "bks") || !strings.Contains(top, "work") {
+		t.Fatalf("header %q lacks the vault name", top)
+	}
+}

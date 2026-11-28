@@ -26,11 +26,27 @@
 <!-- generated from GUIDE.md by docs/build-guide.py: edit GUIDE.md, then run make site -->
 <h1>Using bks</h1>
 <p>Everything you do day to day: opening the vault, finding and copying entries, adding and editing them, tags, one-time codes and every keyboard shortcut. For installation see the <a href="https://github.com/Zurlys/bks/blob/main/README.md">README</a>.</p>
-<ul><li><a href="#open-and-unlock">Open and unlock</a></li><li><a href="#find-an-entry">Find an entry</a></li><li><a href="#copy-a-password-username-or-code">Copy a password, username or code</a></li><li><a href="#add-an-entry">Add an entry</a></li><li><a href="#edit-or-delete-an-entry">Edit or delete an entry</a></li><li><a href="#tags">Tags</a></li><li><a href="#one-time-codes">One-time codes</a></li><li><a href="#generate-a-password">Generate a password</a></li><li><a href="#locking">Locking</a></li><li><a href="#keyboard-shortcuts">Keyboard shortcuts</a></li><li><a href="#command-line">Command line</a></li></ul>
+<ul><li><a href="#open-and-unlock">Open and unlock</a></li><li><a href="#vaults-where-they-live-and-several-of-them">Vaults: where they live, and several of them</a></li><li><a href="#find-an-entry">Find an entry</a></li><li><a href="#copy-a-password-username-or-code">Copy a password, username or code</a></li><li><a href="#add-an-entry">Add an entry</a></li><li><a href="#edit-or-delete-an-entry">Edit or delete an entry</a></li><li><a href="#tags">Tags</a></li><li><a href="#one-time-codes">One-time codes</a></li><li><a href="#generate-a-password">Generate a password</a></li><li><a href="#locking">Locking</a></li><li><a href="#keyboard-shortcuts">Keyboard shortcuts</a></li><li><a href="#command-line">Command line</a></li></ul>
 <h2 id="open-and-unlock">Open and unlock</h2>
 <pre><code>bks</code></pre>
 <p>bks asks for <strong>Touch ID</strong> if you enrolled it (<code>bks touchid enroll</code>). The Touch ID dialog has a <strong>Use GPG passphrase</strong> button; otherwise, or without Touch ID, your GPG key's passphrase dialog opens. Cancel stops.</p>
 <p>The first time a Mac opens a vault, bks shows how many entries it holds and which keys can open it, and asks whether to trust it. Say yes only for a vault file you know is yours.</p>
+<h2 id="vaults-where-they-live-and-several-of-them">Vaults: where they live, and several of them</h2>
+<p><code>bks init</code> asks for a name (the first one is <code>personal</code>) and where the vault should live:</p>
+<p>1. <strong>iCloud Drive</strong> (<code>iCloud Drive/bks/&lt;name&gt;/vault.gpg</code>), when iCloud Drive is on. Recommended: the vault reaches your other Macs and iCloud keeps it if this Mac is lost. iCloud only ever stores the encrypted file. 2. <strong>This Mac only</strong> (<code>~/.local/share/bks/&lt;name&gt;/vault.gpg</code>). bks then says whether it sees a Time Machine backup; if not, keep a copy of the file somewhere safe yourself. 3. <strong>Another folder</strong> you type. bks merges the conflict copies of iCloud Drive, Dropbox and Syncthing; with other services, edits made on two Macs at the same time can be lost.</p>
+<p>bks remembers its vaults in <code>~/.config/bks/vaults.json</code>. When a vault is not in iCloud Drive, <code>bks</code> offers on start to move it there: <code>m</code> moves it, <code>enter</code> asks again next time, <code>n</code> stops asking for that vault.</p>
+<p><strong>On another Mac</strong>, wait until iCloud Drive shows <code>bks/&lt;name&gt;/vault.gpg</code>, then run <code>bks init</code>, pick the same name and place, and answer yes to *Add it to this Mac?* bks unlocks it once with your GPG key and pins it to that Mac.</p>
+<p><strong>Several vaults</strong> (personal, work, …): run <code>bks init</code> again for each. Each has its own GPG keys, its own Touch ID enrolment and its own lock. With more than one, <code>bks</code> asks which to open (enter takes the last one used); the vault's name stays in the header and on the lock screen. Pick one directly with <code>-v</code>:</p>
+<pre><code>bks -v work                 # open the work vault
+bks -v work get github      # or: bks get -v work github</code></pre>
+<p>Commands without <code>-v</code> use the default vault (marked <code>*</code> in <code>bks vault list</code>); with several vaults and no default they stop and ask for <code>-v</code>.</p>
+<pre><code>bks vault list                      # names, where they are, the default
+bks vault move personal             # into iCloud Drive (or: bks vault move personal &lt;path&gt;)
+bks vault default work              # the vault for commands without -v
+bks vault rename work business
+bks vault add shared &lt;path&gt;         # list a vault file that is already there
+bks vault remove shared             # bks forgets it; nothing is deleted</code></pre>
+<p><code>bks vault move</code> copies the vault, checks the copy byte for byte, switches to it, and renames the old file to <code>vault.gpg.moved-&lt;date&gt;</code> so nothing opens the stale copy. Delete that once the new place works. Close other bks windows of that vault before moving it.</p>
 <h2 id="find-an-entry">Find an entry</h2>
 <p>Just type: the search box always has the focus.</p>
 <ul><li>Type fragments of what you remember, in any order: <code>jane corp</code> finds <code>jane.doe@corp.example</code>, <code>git work</code> finds "GitLab (work)".</li><li>Letters must appear in that order within one field, but may have gaps: <code>gtlb</code> finds "GitLab".</li><li>Accents don't matter: <code>petraite</code> finds "Petraitė".</li><li><code>#work</code> finds entries tagged <code>work</code>; <code>#work git</code> finds entries tagged <code>work</code> that also match <code>git</code>.</li><li>Searched: title, username, the host part of URLs, tags and the names of custom fields. Never searched: passwords, notes, one-time-code secrets and field values.</li></ul>
@@ -89,7 +105,7 @@ bks gen --words 5 --sep &#x27; &#x27;   # words separated by spaces</code></pre>
 <p>Useful in scripts:</p>
 <pre><code>export GITHUB_TOKEN=&quot;$(bks get -f token github)&quot;
 mycli login --code &quot;$(bks otp myservice)&quot;   # hand a code straight to a command</code></pre>
-<p>Environment variables: <code>BKS_VAULT</code> (where the vault is; point it into iCloud Drive or Syncthing to share it between Macs), <code>BKS_STATE_DIR</code> (this Mac's state) and <code>BKS_UNLOCK=gpg</code> (skip Touch ID).</p>
+<p>Environment variables: <code>BKS_VAULT</code> (a vault name or path, like <code>-v</code>), <code>BKS_CONFIG</code> (the list of vaults, default <code>~/.config/bks/vaults.json</code>), <code>BKS_STATE_DIR</code> (this Mac's state; only together with <code>BKS_VAULT=&lt;path&gt;</code>) and <code>BKS_UNLOCK=gpg</code> (skip Touch ID).</p>
 </main>
 <footer>
   <p>bks is open source under the <a href="https://github.com/Zurlys/bks/blob/main/LICENSE">MIT license</a>. This page loads nothing from anywhere else.</p>

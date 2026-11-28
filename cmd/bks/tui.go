@@ -18,6 +18,7 @@ import (
 	"github.com/Zurlys/bks/internal/macos"
 	"github.com/Zurlys/bks/internal/store"
 	"github.com/Zurlys/bks/internal/tui"
+	"github.com/Zurlys/bks/internal/vaults"
 )
 
 // lockedEnv carries the lock reason into the re-executed process.
@@ -27,7 +28,7 @@ const lockedEnv = "BKS_LOCKED"
 // replaces itself with a fresh one (syscall.Exec): nothing that was
 // decrypted survives, which a garbage-collected Go process can't otherwise
 // guarantee. The fresh process starts at the lock screen.
-func cmdTUI(ctx context.Context, s *store.Store) error {
+func cmdTUI(ctx context.Context, sel string) error {
 	if !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stdout.Fd())) {
 		fmt.Fprint(os.Stderr, usage)
 		return errors.New("the UI needs a terminal; the commands above work in scripts")
@@ -35,6 +36,35 @@ func cmdTUI(ctx context.Context, s *store.Store) error {
 	setGPGTTY()
 	reason := os.Getenv(lockedEnv)
 	os.Unsetenv(lockedEnv)
+
+	// Which vault: -v / $BKS_VAULT, the only one, or ask. A relock carries
+	// the vault's path in $BKS_VAULT, so it reopens the same vault and
+	// skips the picker and the iCloud reminder.
+	e, cfg, err := loadConfig()
+	if err != nil {
+		return err
+	}
+	v, err := cfg.Resolve(e, sel, os.Getenv("BKS_STATE_DIR"))
+	if errors.Is(err, vaults.ErrChoose) {
+		v, err = pickVault(os.Stdout, readKey, e, cfg)
+	}
+	if reason == "" && err == nil {
+		v, err = remindICloud(os.Stdout, readKey, e, cfg, v)
+	}
+	if errors.Is(err, errQuit) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if reason == "" && v.Name != "" && len(cfg.Vaults) > 1 && cfg.LastUsed != v.Name {
+		cfg.LastUsed = v.Name
+		_ = cfg.Save(e) // only the picker's preselection
+	}
+	s, err := newStore(v)
+	if err != nil {
+		return err
+	}
 
 	// Warnings from unlocking (e.g. a passphrase saved in the Keychain)
 	// would vanish under the full-screen UI: collect them and make the
@@ -48,7 +78,7 @@ func cmdTUI(ctx context.Context, s *store.Store) error {
 	for {
 		choice := byte('u')
 		if reason != "" {
-			if choice = lockScreen(reason, s.TouchIDEnrolled()); choice == 'q' {
+			if choice = lockScreen(reason, v.Name, s.TouchIDEnrolled()); choice == 'q' {
 				return nil
 			}
 		}
@@ -102,7 +132,7 @@ func cmdTUI(ctx context.Context, s *store.Store) error {
 		save = nil // this Mac's last good copy: viewing and copying only
 	}
 	m := tui.New(tui.Options{
-		Vault: sess.Vault, Clipboard: cb, Concealed: cb.Concealed(), Events: events,
+		Vault: sess.Vault, Name: v.Name, Clipboard: cb, Concealed: cb.Concealed(), Events: events,
 		UnlockedAt: time.Now().Round(0),
 		Save:       save,
 		Generate:   func() (string, error) { return gen.Password(24, true) },
@@ -120,14 +150,18 @@ func cmdTUI(ctx context.Context, s *store.Store) error {
 		return err
 	}
 	stopWatch() // defers do not run across exec
-	return syscall.Exec(exe, []string{exe}, append(os.Environ(), lockedEnv+"="+res.Reason))
+	env := withEnv(withEnv(os.Environ(), "BKS_VAULT", v.Path), lockedEnv, res.Reason)
+	return syscall.Exec(exe, []string{exe}, env)
 }
 
 // lockScreen shows why bks locked and returns 'u' (unlock: Touch ID when
 // enrolled, else GPG), 'g' (GPG passphrase) or 'q' (quit).
-func lockScreen(reason string, touchID bool) byte {
+func lockScreen(reason, name string, touchID bool) byte {
 	fmt.Print("\033[H\033[2J")
-	fmt.Printf("\n   🔒 bks is locked: %s\n\n", reason)
+	if name != "" {
+		name = " (" + name + ")"
+	}
+	fmt.Printf("\n   🔒 bks%s is locked: %s\n\n", name, reason)
 	if touchID {
 		fmt.Print("   enter  unlock with Touch ID\n   g      use the GPG passphrase\n")
 	} else {

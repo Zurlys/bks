@@ -18,7 +18,7 @@ A terminal password manager for macOS. Your passwords live in **one GPG-encrypte
 
 ## Why
 
-- **No server, no account, no subscription.** The vault is a file. Sync it however you like (iCloud Drive, Syncthing, git) or not at all.
+- **No server, no account, no subscription.** The vault is a file, in iCloud Drive by default; keep it anywhere else if you like. Several vaults (personal, work) are fine.
 - **Readable without bks, forever.** `gpg -d vault.gpg` gives you plain JSON. If this project disappears, your passwords don't.
 - **Built for people who live in a terminal**, and small enough to read: a Go CLI/TUI plus a ~250-line Swift helper for the macOS bits.
 
@@ -93,8 +93,9 @@ The [guide](GUIDE.md) ([on the website](https://zurlys.github.io/bks/guide.html)
 
 | Path | What | Sync it? |
 |---|---|---|
-| `$BKS_VAULT` (default `~/.local/share/bks/vault.gpg`) | the vault | yes, if you want — point `BKS_VAULT` into iCloud Drive or a Syncthing folder |
-| `~/.local/state/bks/` (`$BKS_STATE_DIR`) | this Mac only: Touch ID key blob, the vault's pinned fingerprint, last good copy, a public-key-only GnuPG home | **never** |
+| `iCloud Drive/bks/<name>/vault.gpg` (chosen at `bks init`; `bks vault list` shows where each vault is) | a vault | yes: in iCloud Drive it reaches your other Macs |
+| `~/.config/bks/vaults.json` | which vaults this Mac knows, the default | no |
+| `~/.local/state/bks/` (one folder per vault) | this Mac only: Touch ID key blob, the vault's pinned fingerprint, last good copy, a public-key-only GnuPG home | **never** |
 
 ## Backups and recovery
 

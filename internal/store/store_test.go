@@ -358,3 +358,43 @@ func TestEnrollRequiresPinnedVault(t *testing.T) {
 func execGPG(home string, args ...string) ([]byte, error) {
 	return exec.Command("gpg", append([]string{"--homedir", home, "--batch", "--quiet"}, args...)...).Output()
 }
+
+func TestCopyToThenOpenThere(t *testing.T) {
+	e := newEnv(t)
+	sess := e.init(t)
+	add(t, e.s, sess, "kept")
+	before, err := os.ReadFile(e.s.VaultPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dest := filepath.Join(e.dir, "Mobile Documents", "bks", "personal", "vault.gpg")
+	if err := e.s.CopyTo(dest); err != nil {
+		t.Fatal(err)
+	}
+	if after, _ := os.ReadFile(e.s.VaultPath); !bytes.Equal(after, before) {
+		t.Fatal("the original changed")
+	}
+	if err := e.s.CopyTo(dest); !errors.Is(err, ErrExists) {
+		t.Fatalf("copy over an existing file: %v", err)
+	}
+
+	// The same per-Mac state opens the copy: same pin, same keyring.
+	moved := New(dest, e.s.StateDir, e.s.User)
+	moved.Confirm, moved.Warn = e.s.Confirm, e.s.Warn
+	s2, err := moved.UnlockGPG(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s2.Vault.Entries) != 1 || s2.Vault.Entries[0].Title != "kept" {
+		t.Fatalf("entries after the move: %+v", s2.Vault.Entries)
+	}
+	add(t, moved, s2, "after move")
+	if _, err := os.Stat(dest + ".bak"); err != nil {
+		t.Fatalf("no backup next to the moved vault: %v", err)
+	}
+	left, _ := filepath.Glob(filepath.Join(filepath.Dir(dest), ".*.tmp"))
+	if len(left) != 0 {
+		t.Fatalf("temp files left: %v", left)
+	}
+}

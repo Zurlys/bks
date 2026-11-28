@@ -29,8 +29,9 @@ const usage = `bks — terminal password manager
 
 usage:
   bks                                               open the UI (type to search, enter copies)
-  bks init                                          create the vault: pick or create a GPG key
-  bks init --recipient <key> [--recipient <key>]   same, non-interactive (fingerprint or key ID)
+  bks init                                          create a vault (or add one synced from another Mac):
+                                                    name, place (iCloud Drive), GPG key
+  bks init [--name <n>] --recipient <key>...        same, non-interactive (fingerprint or key ID)
   bks add --title <t> [--user <u>] [--url <url>]... [--tag <t>]... [--otp] [--notes <n>]
           [--generate <len> [--no-symbols] | --words <n> | --password-stdin] [--otp-stdin]
           --otp asks for the otpauth:// URI or base32 secret on the terminal (hidden);
@@ -46,7 +47,14 @@ usage:
   bks import 1password <file.1pux> [--dry-run] [--archived]
                                                     import a 1Password export (try --dry-run first)
   bks touchid [status|enroll|remove]                Touch ID unlock on this Mac
+  bks vault [list]                                  the vaults on this Mac (* = default)
+  bks vault move <name> [<path>]                    move a vault (default: into iCloud Drive)
+  bks vault add <name> <path>                       list a vault file that is already there
+  bks vault rename|default|remove <name> ...        remove only forgets it; nothing is deleted
   bks version
+
+several vaults: bks -v <name> [command]  (or bks <command> -v <name> …)
+  The UI asks which one to open; commands without -v use the default vault.
 
 unlocking: Touch ID when enrolled (its dialog offers "Use GPG passphrase"), else GPG.
 BKS_UNLOCK=gpg skips Touch ID.
@@ -54,8 +62,9 @@ BKS_UNLOCK=gpg skips Touch ID.
 search: every word must match (fuzzy, any order, accents ignored); #tag matches tags only
 
 environment:
-  BKS_VAULT      vault file   (default ~/.local/share/bks/vault.gpg)
-  BKS_STATE_DIR  per-Mac state (default ~/.local/state/bks)
+  BKS_VAULT      a vault name or path, like -v
+  BKS_CONFIG     the list of vaults (default ~/.config/bks/vaults.json)
+  BKS_STATE_DIR  per-Mac state, only with BKS_VAULT=<path>
 `
 
 // exitError carries a specific exit code.
@@ -79,6 +88,10 @@ func main() {
 }
 
 func run(ctx context.Context, args []string) error {
+	args, sel, err := takeVaultFlag(args)
+	if err != nil {
+		return err
+	}
 	if len(args) > 0 {
 		switch args[0] {
 		case "help", "-h", "--help":
@@ -89,29 +102,31 @@ func run(ctx context.Context, args []string) error {
 			return nil
 		case clipboard.ClearCommand: // detached clipboard clearer, see internal/clipboard
 			return clipboard.RunClear(args[1:], os.Stdin)
+		case "gen":
+			return cmdGen(args[1:])
+		case "vault", "vaults":
+			return cmdVault(ctx, args[1:])
+		case "init":
+			return cmdInit(ctx, sel, args[1:])
 		}
 	}
-	s, err := store.Default()
+	if sel == "" {
+		sel = os.Getenv("BKS_VAULT")
+	}
+	if len(args) == 0 {
+		return cmdTUI(ctx, sel)
+	}
+	s, err := openStore(sel)
 	if err != nil {
 		return err
 	}
-	s.Confirm = confirm
-	s.Warn = func(m string) { fmt.Fprintln(os.Stderr, "bks: warning:", m) }
-
-	if len(args) == 0 {
-		return cmdTUI(ctx, s)
-	}
 	switch args[0] {
-	case "init":
-		return cmdInit(ctx, s, args[1:])
 	case "add":
 		return cmdAdd(ctx, s, args[1:])
 	case "get":
 		return cmdGet(ctx, s, args[1:])
 	case "otp":
 		return cmdOTP(ctx, s, args[1:])
-	case "gen":
-		return cmdGen(args[1:])
 	case "ls", "list":
 		return cmdList(ctx, s, args[1:])
 	case "recipients":
@@ -134,30 +149,12 @@ func (m *multi) Set(v string) error { *m = append(*m, v); return nil }
 func flags(name string) *flag.FlagSet {
 	fs := flag.NewFlagSet("bks "+name, flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
+	misplaced := func(string) error {
+		return fmt.Errorf("put -v right after the command: bks %s -v <vault> …", name)
+	}
+	fs.Func("v", "", misplaced)
+	fs.Func("vault", "", misplaced)
 	return fs
-}
-
-func cmdInit(ctx context.Context, s *store.Store, args []string) error {
-	fs := flags("init")
-	var recipients multi
-	fs.Var(&recipients, "recipient", "GPG key (fingerprint or key ID) that can open the vault; repeatable")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	if len(recipients) == 0 {
-		u, done, err := ttyUI()
-		if err != nil {
-			return err
-		}
-		defer done()
-		return initInteractive(ctx, s, u)
-	}
-	sess, err := s.Init(ctx, recipients)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(os.Stderr, "created %s\n", s.VaultPath)
-	return printRecipients(ctx, s, sess.Vault)
 }
 
 // unlock opens the vault: with Touch ID when it is enrolled on this Mac

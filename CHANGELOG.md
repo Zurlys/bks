@@ -4,7 +4,17 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
+### Added
+
+- Several vaults (personal, work, …), each with its own GPG keys, Touch ID enrolment, pin and lock. `bks` asks which to open (the last used is preselected); `-v <name>` picks one; commands without `-v` use the default vault. The vault's name is shown in the header and on the lock screen.
+- `bks init` asks for the vault's name and place: iCloud Drive (recommended, when on), this Mac only (with a note on whether Time Machine backs it up), or a folder you choose. A vault already synced from another Mac is added instead of replaced.
+- `bks vault list | move | add | rename | default | remove`. `move` copies, checks the copy byte for byte, switches, and renames the old file aside.
+- On start, bks offers to move a vault that is not in iCloud Drive there, with "don't remind me again".
+- The list of vaults lives in `~/.config/bks/vaults.json`; an existing vault becomes `personal` and keeps its place and state.
+
 ### Changed
+
+- `BKS_VAULT` takes a vault name or a path; `BKS_STATE_DIR` applies only together with a path.
 
 - Releases are signed with a Developer ID and notarized by Apple: a copy downloaded with a browser runs without the `xattr` step.
 - `bks` and `bks-mac` run with the hardened runtime, in releases and `make` builds: macOS ignores `DYLD_*` code injection into them and refuses debuggers.

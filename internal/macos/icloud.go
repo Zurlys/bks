@@ -21,6 +21,9 @@ func ICloudSynced(path string) bool {
 	return iCloudSynced(path, home)
 }
 
+// ICloudSyncedUnder is ICloudSynced for the given home directory (tests).
+func ICloudSyncedUnder(path, home string) bool { return iCloudSynced(path, home) }
+
 func iCloudSynced(path, home string) bool {
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -42,16 +45,19 @@ func iCloudSynced(path, home string) bool {
 	return false
 }
 
-// resolve follows symlinks in the existing part of p (the file itself may
-// not exist yet).
+// resolve follows symlinks in the existing part of p; the rest (a vault
+// file or folders not created yet) is kept as written.
 func resolve(p string) string {
-	if r, err := filepath.EvalSymlinks(p); err == nil {
-		return r
+	rest := ""
+	for q := p; ; q = filepath.Dir(q) {
+		if r, err := filepath.EvalSymlinks(q); err == nil {
+			return filepath.Join(r, rest)
+		}
+		if q == filepath.Dir(q) {
+			return p
+		}
+		rest = filepath.Join(filepath.Base(q), rest)
 	}
-	if d, err := filepath.EvalSymlinks(filepath.Dir(p)); err == nil {
-		return filepath.Join(d, filepath.Base(p))
-	}
-	return p
 }
 
 func within(p, dir string) bool {

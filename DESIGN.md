@@ -32,11 +32,14 @@ gpg       GnuPG 2.2+           all OpenPGP encryption and decryption
 
 | Path | What | Synced? |
 |---|---|---|
-| `$BKS_VAULT` (default `~/.local/share/bks/vault.gpg`) | the vault | optional — point `BKS_VAULT` into iCloud Drive / Syncthing (a real path, not a symlink: saves rename over it) |
+| `<folder>/vault.gpg`, default `iCloud Drive/bks/<name>/vault.gpg` | a vault | yes (a real path, not a symlink: saves rename over it) |
 | `vault.gpg.bak` | the previous vault, kept on every save | with the vault |
-| `$BKS_STATE_DIR/device.json` (default `~/.local/state/bks`) | this Mac's pin of the unlock secret, Touch ID key blob and sealed secret | **never** |
-| `$BKS_STATE_DIR/last-good.gpg` | this Mac's last opened or saved vault | **never** |
-| `$BKS_STATE_DIR/gnupg/` | bks's own GnuPG home: recipients' public keys only | **never** (rebuilt from the vault) |
+| `~/.config/bks/vaults.json` (`$BKS_CONFIG`) | the vaults this Mac knows: name, path, state directory, default, last used, "don't remind" | **never** |
+| `<state>/device.json` | this Mac's pin of the vault's unlock secret, Touch ID key blob and sealed secret | **never** |
+| `<state>/last-good.gpg` | this Mac's last opened or saved copy of that vault | **never** |
+| `<state>/gnupg/` | bks's own GnuPG home for that vault: recipients' public keys only | **never** (rebuilt from the vault) |
+
+Each vault has its own state directory: `~/.local/state/bks` for the vault that predates multi-vault support, `~/.local/state/bks/v/<name>` for later ones, and one derived from the path for a vault opened by path that the config does not list. A shared one would make each vault's pin reject the other. Vault names are 1–16 lowercase letters, digits and hyphens: short enough for gpg-agent's socket paths, and never containing the space, dot or brackets of a sync tool's conflict-copy name.
 
 There is no configuration file: settings and recipients live inside the encrypted vault, so they sync with it.
 

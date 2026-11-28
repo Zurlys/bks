@@ -4,6 +4,7 @@ macOS comes first: the Linux and BSD work starts once the macOS releases are set
 
 ## macOS
 
+- [ ] Check how a vault evicted by iCloud ("Optimize Mac Storage", `brctl evict`) behaves when bks opens it, online and offline; wait for the download instead of falling back to the last good copy when online.
 - [ ] Finish release signing ([RELEASING.md](RELEASING.md), "Signing and notarization"): an App Store Connect API key with the Developer role, the `release` environment's secrets and `APPLE_TEAM_ID`. Until then a version tag fails at signing. Then release v0.1.0-alpha.3.
 - [ ] Before trusting `bks-mac`, check that it is signed by the same Developer ID team as `bks` (on top of "only the binary next to bks").
 

@@ -33,7 +33,9 @@ const (
 
 // Options configure a Model.
 type Options struct {
-	Vault      *vault.Vault
+	Vault *vault.Vault
+	// Name is the vault's name, shown in the header (empty: none).
+	Name       string
 	Clipboard  clipboard.Clipboard
 	UnlockedAt time.Time
 	// Now returns wall-clock time without a monotonic reading, so a sleep of
@@ -592,6 +594,9 @@ func (m Model) View() string {
 	w := max(40, m.width)
 
 	left := fmt.Sprintf(" %s", header.Render("bks"))
+	if m.opt.Name != "" {
+		left += dim.Render(" · ") + header.Render(m.opt.Name)
+	}
 	idleLeft := m.idle - now.Sub(m.lastInput)
 	watch := ""
 	if m.opt.Events == nil {

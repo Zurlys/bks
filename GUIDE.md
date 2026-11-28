@@ -3,6 +3,7 @@
 Everything you do day to day: opening the vault, finding and copying entries, adding and editing them, tags, one-time codes and every keyboard shortcut. For installation see the [README](README.md).
 
 - [Open and unlock](#open-and-unlock)
+- [Vaults: where they live, and several of them](#vaults-where-they-live-and-several-of-them)
 - [Find an entry](#find-an-entry)
 - [Copy a password, username or code](#copy-a-password-username-or-code)
 - [Add an entry](#add-an-entry)
@@ -23,6 +24,38 @@ bks
 bks asks for **Touch ID** if you enrolled it (`bks touchid enroll`). The Touch ID dialog has a **Use GPG passphrase** button; otherwise, or without Touch ID, your GPG key's passphrase dialog opens. Cancel stops.
 
 The first time a Mac opens a vault, bks shows how many entries it holds and which keys can open it, and asks whether to trust it. Say yes only for a vault file you know is yours.
+
+## Vaults: where they live, and several of them
+
+`bks init` asks for a name (the first one is `personal`) and where the vault should live:
+
+1. **iCloud Drive** (`iCloud Drive/bks/<name>/vault.gpg`), when iCloud Drive is on. Recommended: the vault reaches your other Macs and iCloud keeps it if this Mac is lost. iCloud only ever stores the encrypted file.
+2. **This Mac only** (`~/.local/share/bks/<name>/vault.gpg`). bks then says whether it sees a Time Machine backup; if not, keep a copy of the file somewhere safe yourself.
+3. **Another folder** you type. bks merges the conflict copies of iCloud Drive, Dropbox and Syncthing; with other services, edits made on two Macs at the same time can be lost.
+
+bks remembers its vaults in `~/.config/bks/vaults.json`. When a vault is not in iCloud Drive, `bks` offers on start to move it there: `m` moves it, `enter` asks again next time, `n` stops asking for that vault.
+
+**On another Mac**, wait until iCloud Drive shows `bks/<name>/vault.gpg`, then run `bks init`, pick the same name and place, and answer yes to *Add it to this Mac?* bks unlocks it once with your GPG key and pins it to that Mac.
+
+**Several vaults** (personal, work, …): run `bks init` again for each. Each has its own GPG keys, its own Touch ID enrolment and its own lock. With more than one, `bks` asks which to open (enter takes the last one used); the vault's name stays in the header and on the lock screen. Pick one directly with `-v`:
+
+```sh
+bks -v work                 # open the work vault
+bks -v work get github      # or: bks get -v work github
+```
+
+Commands without `-v` use the default vault (marked `*` in `bks vault list`); with several vaults and no default they stop and ask for `-v`.
+
+```sh
+bks vault list                      # names, where they are, the default
+bks vault move personal             # into iCloud Drive (or: bks vault move personal <path>)
+bks vault default work              # the vault for commands without -v
+bks vault rename work business
+bks vault add shared <path>         # list a vault file that is already there
+bks vault remove shared             # bks forgets it; nothing is deleted
+```
+
+`bks vault move` copies the vault, checks the copy byte for byte, switches to it, and renames the old file to `vault.gpg.moved-<date>` so nothing opens the stale copy. Delete that once the new place works. Close other bks windows of that vault before moving it.
 
 ## Find an entry
 
@@ -230,4 +263,4 @@ export GITHUB_TOKEN="$(bks get -f token github)"
 mycli login --code "$(bks otp myservice)"   # hand a code straight to a command
 ```
 
-Environment variables: `BKS_VAULT` (where the vault is; point it into iCloud Drive or Syncthing to share it between Macs), `BKS_STATE_DIR` (this Mac's state) and `BKS_UNLOCK=gpg` (skip Touch ID).
+Environment variables: `BKS_VAULT` (a vault name or path, like `-v`), `BKS_CONFIG` (the list of vaults, default `~/.config/bks/vaults.json`), `BKS_STATE_DIR` (this Mac's state; only together with `BKS_VAULT=<path>`) and `BKS_UNLOCK=gpg` (skip Touch ID).
