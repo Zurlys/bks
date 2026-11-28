@@ -21,8 +21,12 @@ import (
 	"github.com/Zurlys/bks/internal/vaults"
 )
 
-// lockedEnv carries the lock reason into the re-executed process.
-const lockedEnv = "BKS_LOCKED"
+// lockedEnv carries the lock reason into the re-executed process;
+// switchEnv the name of the vault left with ctrl-v.
+const (
+	lockedEnv = "BKS_LOCKED"
+	switchEnv = "BKS_SWITCH_FROM"
+)
 
 // cmdTUI unlocks the vault and runs the UI. When the UI locks, the process
 // replaces itself with a fresh one (syscall.Exec): nothing that was
@@ -36,6 +40,8 @@ func cmdTUI(ctx context.Context, sel string) error {
 	setGPGTTY()
 	reason := os.Getenv(lockedEnv)
 	os.Unsetenv(lockedEnv)
+	from := os.Getenv(switchEnv)
+	os.Unsetenv(switchEnv)
 
 	// Which vault: -v / $BKS_VAULT, the only one, or ask. A relock carries
 	// the vault's path in $BKS_VAULT, so it reopens the same vault and
@@ -46,7 +52,7 @@ func cmdTUI(ctx context.Context, sel string) error {
 	}
 	v, err := cfg.Resolve(e, sel, os.Getenv("BKS_STATE_DIR"))
 	if errors.Is(err, vaults.ErrChoose) {
-		v, err = pickVault(os.Stdout, readKey, e, cfg)
+		v, err = pickVault(os.Stdout, readKey, e, cfg, from)
 	}
 	if reason == "" && err == nil {
 		v, err = remindICloud(os.Stdout, readKey, e, cfg, v)
@@ -132,7 +138,8 @@ func cmdTUI(ctx context.Context, sel string) error {
 		save = nil // this Mac's last good copy: viewing and copying only
 	}
 	m := tui.New(tui.Options{
-		Vault: sess.Vault, Name: v.Name, Clipboard: cb, Concealed: cb.Concealed(), Events: events,
+		Vault: sess.Vault, Name: v.Name, Clipboard: cb,
+		CanSwitch: len(cfg.Vaults) > 1 || (v.Name == "" && len(cfg.Vaults) > 0), Concealed: cb.Concealed(), Events: events,
 		UnlockedAt: time.Now().Round(0),
 		Save:       save,
 		Generate:   func() (string, error) { return gen.Password(24, true) },
@@ -150,7 +157,12 @@ func cmdTUI(ctx context.Context, sel string) error {
 		return err
 	}
 	stopWatch() // defers do not run across exec
+	// A lock reopens this vault at the lock screen; a switch (ctrl-v)
+	// starts over at the picker, which then preselects another vault.
 	env := withEnv(withEnv(os.Environ(), "BKS_VAULT", v.Path), lockedEnv, res.Reason)
+	if res.Switch {
+		env = withEnv(withoutEnv(withoutEnv(os.Environ(), "BKS_VAULT"), "BKS_STATE_DIR"), switchEnv, v.Name)
+	}
 	return syscall.Exec(exe, []string{exe}, env)
 }
 

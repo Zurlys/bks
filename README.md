@@ -84,7 +84,7 @@ The [guide](GUIDE.md) ([on the website](https://zurlys.github.io/bks/guide.html)
 
 | Where | Keys |
 |---|---|
-| List | type to search · `↑↓` move · `enter` copy password · `ctrl-o` copy one-time code · `ctrl-u` copy username · `tab` fields · `ctrl-n` new · `ctrl-e` edit · `ctrl-d` delete · `ctrl-l` lock · `esc` clear / quit |
+| List | type to search · `↑↓` move · `enter` copy password · `ctrl-o` copy one-time code · `ctrl-u` copy username · `tab` fields · `ctrl-n` new · `ctrl-e` edit · `ctrl-d` delete · `ctrl-v` other vault · `ctrl-l` lock · `esc` clear / quit |
 | Fields | `↑↓` choose · `enter` copy · `r` reveal for 10 s · `e` edit · `tab`/`esc` back |
 | Edit form | `ctrl-s` save · `tab`/`shift-tab` move · `ctrl-g` generate password · `ctrl-r` show secrets · `esc` cancel |
 | Lock screen | `enter` Touch ID · `g` GPG passphrase · `q` quit |

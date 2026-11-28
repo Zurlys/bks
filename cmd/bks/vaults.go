@@ -601,8 +601,9 @@ func renameAside(path, suffix string) (string, error) {
 	return filepath.Join(dir, base+suffix), nil
 }
 
-// pickVault asks which vault to open; the last used one is preselected.
-func pickVault(out io.Writer, key func() byte, e vaults.Env, cfg *vaults.Config) (vaults.Vault, error) {
+// pickVault asks which vault to open: the last used one is preselected,
+// or, when switching away from the vault "from", another one.
+func pickVault(out io.Writer, key func() byte, e vaults.Env, cfg *vaults.Config, from string) (vaults.Vault, error) {
 	list := cfg.Vaults
 	if len(list) > 9 {
 		list = list[:9]
@@ -611,6 +612,14 @@ func pickVault(out io.Writer, key func() byte, e vaults.Env, cfg *vaults.Config)
 	for i, v := range list {
 		if v.Name == cfg.LastUsed || (cfg.LastUsed == "" && v.Name == cfg.Default) {
 			pre = i
+		}
+	}
+	if list[pre].Name == from {
+		for i, v := range list {
+			if v.Name != from {
+				pre = i
+				break
+			}
 		}
 	}
 	fmt.Fprint(out, "\n   bks: which vault?\n\n")
@@ -673,11 +682,16 @@ func remindICloud(out io.Writer, key func() byte, e vaults.Env, cfg *vaults.Conf
 
 // withEnv returns env with key set to val (replacing any earlier value).
 func withEnv(env []string, key, val string) []string {
-	out := make([]string, 0, len(env)+1)
+	return append(withoutEnv(env, key), key+"="+val)
+}
+
+// withoutEnv returns env without key.
+func withoutEnv(env []string, key string) []string {
+	out := make([]string, 0, len(env))
 	for _, kv := range env {
 		if !strings.HasPrefix(kv, key+"=") {
 			out = append(out, kv)
 		}
 	}
-	return append(out, key+"="+val)
+	return out
 }

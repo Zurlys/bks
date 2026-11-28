@@ -35,7 +35,9 @@ const (
 type Options struct {
 	Vault *vault.Vault
 	// Name is the vault's name, shown in the header (empty: none).
-	Name       string
+	Name string
+	// CanSwitch: there are other vaults; ctrl-v ends the UI to switch.
+	CanSwitch  bool
 	Clipboard  clipboard.Clipboard
 	UnlockedAt time.Time
 	// Now returns wall-clock time without a monotonic reading, so a sleep of
@@ -56,6 +58,8 @@ type Options struct {
 type Result struct {
 	Lock   bool
 	Reason string
+	// Switch: wiped to open another vault (ctrl-v), not locked.
+	Switch bool
 }
 
 type focus int
@@ -253,6 +257,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.copy("username", e.Username)
 			}
 			return m, nil
+		case "ctrl+v":
+			// Like a lock (the process restarts, nothing decrypted
+			// survives), then the vault picker instead of the lock screen.
+			// With one vault, ctrl-v stays paste in the search box.
+			if m.opt.CanSwitch {
+				m.result = Result{Lock: true, Switch: true, Reason: "switching vaults"}
+				return m.quit()
+			}
 		}
 		if m.focus == focusDetail {
 			return m.updateDetail(msg)
@@ -640,6 +652,9 @@ func (m Model) View() string {
 		status = okStyle.Render(trunc(fmt.Sprintf("✓ %s copied%s · clipboard clears in %ds", m.copied, where, int(m.clearAt.Sub(now).Seconds()+0.5)), w-2))
 	}
 	help := "enter copy password · ^o otp · ^u user · tab fields · ^n new · ^e edit · ^d delete · ^l lock · esc quit"
+	if m.opt.CanSwitch {
+		help = strings.Replace(help, "^l lock", "^v vault · ^l lock", 1)
+	}
 	switch m.focus {
 	case focusDetail:
 		help = "↑↓ field · enter copy · r reveal · e edit · ^o otp · tab/esc back · ^l lock"

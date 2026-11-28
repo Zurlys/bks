@@ -107,6 +107,13 @@ func TestTakeVaultFlag(t *testing.T) {
 	}
 }
 
+func TestWithoutEnv(t *testing.T) {
+	got := withoutEnv([]string{"BKS_VAULT=x", "A=1", "BKS_VAULTS=keep"}, "BKS_VAULT")
+	if strings.Join(got, " ") != "A=1 BKS_VAULTS=keep" {
+		t.Fatalf("%q", got)
+	}
+}
+
 func TestWithEnv(t *testing.T) {
 	got := withEnv([]string{"A=1", "BKS_VAULT=work", "B=2", "BKS_VAULTX=keep"}, "BKS_VAULT", "/p/vault.gpg")
 	want := "A=1 B=2 BKS_VAULTX=keep BKS_VAULT=/p/vault.gpg"
@@ -135,21 +142,33 @@ func TestPickVault(t *testing.T) {
 	e := fakeHome(t, false)
 	cfg := twoVaults(t, e)
 	var out bytes.Buffer
-	if v, err := pickVault(&out, keys("\r"), e, cfg); err != nil || v.Name != "personal" {
+	if v, err := pickVault(&out, keys("\r"), e, cfg, ""); err != nil || v.Name != "personal" {
 		t.Fatalf("enter with no last used: %+v, %v", v, err)
 	}
 	cfg.LastUsed = "work"
-	if v, _ := pickVault(&out, keys("\r"), e, cfg); v.Name != "work" {
+	if v, _ := pickVault(&out, keys("\r"), e, cfg, ""); v.Name != "work" {
 		t.Fatalf("enter must open the last used: %+v", v)
 	}
-	if v, _ := pickVault(&out, keys("x91"), e, cfg); v.Name != "personal" {
+	if v, _ := pickVault(&out, keys("x91"), e, cfg, ""); v.Name != "personal" {
 		t.Fatalf("1 after ignored keys: %+v", v)
 	}
-	if _, err := pickVault(&out, keys("q"), e, cfg); !errors.Is(err, errQuit) {
+	if _, err := pickVault(&out, keys("q"), e, cfg, ""); !errors.Is(err, errQuit) {
 		t.Fatalf("q: %v", err)
 	}
 	if !strings.Contains(out.String(), "~/.local/share/bks/work/vault.gpg") {
 		t.Fatalf("picker output:\n%s", out.String())
+	}
+	// switching away from work (the last used): enter opens the other one
+	if v, _ := pickVault(&out, keys("\r"), e, cfg, "work"); v.Name != "personal" {
+		t.Fatalf("switch from work: %+v", v)
+	}
+	cfg.LastUsed = "personal"
+	if v, _ := pickVault(&out, keys("\r"), e, cfg, "personal"); v.Name != "work" {
+		t.Fatalf("switch from personal: %+v", v)
+	}
+	// a switch can still pick the same vault on purpose
+	if v, _ := pickVault(&out, keys("1"), e, cfg, "personal"); v.Name != "personal" {
+		t.Fatalf("1 while switching: %+v", v)
 	}
 }
 

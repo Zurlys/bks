@@ -578,3 +578,25 @@ func TestHeaderShowsVaultName(t *testing.T) {
 		t.Fatalf("header %q lacks the vault name", top)
 	}
 }
+
+func TestCtrlVSwitchesVaults(t *testing.T) {
+	h := newHarness(t)
+	if strings.Contains(h.m.View(), "^v vault") {
+		t.Fatal("^v vault offered with one vault")
+	}
+	h.key(tea.KeyCtrlV)
+	if h.m.Done() || h.m.Result() != (Result{}) {
+		t.Fatalf("ctrl-v with one vault ended the UI: %+v", h.m.Result())
+	}
+
+	h = newHarness(t)
+	h.m.opt.CanSwitch = true
+	if !strings.Contains(h.m.View(), "^v vault") {
+		t.Fatal("no ^v hint with several vaults")
+	}
+	h.typ("git")
+	h.key(tea.KeyCtrlV)
+	if !h.m.Done() || h.m.Result() != (Result{Lock: true, Switch: true, Reason: "switching vaults"}) {
+		t.Fatalf("ctrl-v: done %v, %+v", h.m.Done(), h.m.Result())
+	}
+}

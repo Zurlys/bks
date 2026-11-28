@@ -37,7 +37,7 @@ bks remembers its vaults in `~/.config/bks/vaults.json`. When a vault is not in 
 
 **On another Mac**, wait until iCloud Drive shows `bks/<name>/vault.gpg`, then run `bks init`, pick the same name and place, and answer yes to *Add it to this Mac?* bks unlocks it once with your GPG key and pins it to that Mac.
 
-**Several vaults** (personal, work, …): run `bks init <name>` for each, e.g. `bks init work`. Each has its own GPG keys, its own Touch ID enrolment and its own lock. With more than one, `bks` asks which to open (enter takes the last one used); the vault's name stays in the header and on the lock screen. Pick one directly with `-v`:
+**Several vaults** (personal, work, …): run `bks init <name>` for each, e.g. `bks init work`. Each has its own GPG keys, its own Touch ID enrolment and its own lock. With more than one, `bks` asks which to open (enter takes the last one used); the vault's name stays in the header and on the lock screen. **`ctrl-v`** switches: bks wipes the open vault from memory (it restarts, as when it locks), shows the list with the other vault preselected, and you unlock that one. Pick one directly with `-v`:
 
 ```sh
 bks -v work                 # open the work vault
@@ -186,6 +186,7 @@ Locking closes the UI and restarts bks at the lock screen, so nothing decrypted 
 | Key | Action |
 |---|---|
 | `ctrl-l` | lock now |
+| `ctrl-v` | switch to another vault (with several vaults; in the search box it is no longer paste, ⌘V still is) |
 | `ctrl-c` | quit |
 
 ### Entry list (the search box has the focus)
