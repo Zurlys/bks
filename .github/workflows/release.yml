@@ -59,14 +59,21 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Release notes
-        run: scripts/release-notes.sh "${GITHUB_REF_NAME#v}" > "$RUNNER_TEMP/release-notes.md"
-
-      - name: Build and sign with Developer ID
+      # Signing is on when the environment has the APPLE_TEAM_ID variable.
+      # Without it the release is ad-hoc signed and its notes say so; with
+      # it, a missing or broken certificate fails the release.
+      - name: Build and sign
         env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
           DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
           DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
         run: |
+          if [ -z "$APPLE_TEAM_ID" ]; then
+            echo "::warning::APPLE_TEAM_ID is not set in the release environment: this release is ad-hoc signed and not notarized"
+            unset DEVELOPER_ID_P12 DEVELOPER_ID_P12_PASSWORD
+            scripts/build-release.sh "$GITHUB_REF_NAME"
+            exit 0
+          fi
           kc="$RUNNER_TEMP/signing.keychain-db"
           trap 'scripts/signing-keychain.sh delete "$kc"' EXIT
           if [ -z "$DEVELOPER_ID_P12" ] || [ -z "$DEVELOPER_ID_P12_PASSWORD" ]; then
@@ -78,6 +85,7 @@ jobs:
           BKS_SIGN_IDENTITY="$identity" scripts/build-release.sh "$GITHUB_REF_NAME"
 
       - name: Notarize
+        if: vars.APPLE_TEAM_ID != ''
         env:
           NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
@@ -93,15 +101,15 @@ jobs:
           unset NOTARY_KEY_P8
           scripts/notarize.sh
 
-      - name: Check the signed binaries
+      - name: Check the built binaries
         env:
           APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
-        run: |
-          if [ -z "$APPLE_TEAM_ID" ]; then
-            echo "::error::the release environment lacks the APPLE_TEAM_ID variable"
-            exit 1
-          fi
-          scripts/check-release.sh "$GITHUB_REF_NAME" "$APPLE_TEAM_ID"
+        run: scripts/check-release.sh "$GITHUB_REF_NAME" "$APPLE_TEAM_ID"
+
+      - name: Release notes
+        env:
+          APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+        run: BKS_NOTARIZED="${APPLE_TEAM_ID:+1}" scripts/release-notes.sh "${GITHUB_REF_NAME#v}" > "$RUNNER_TEMP/release-notes.md"
 
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:

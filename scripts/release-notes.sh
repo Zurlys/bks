@@ -2,6 +2,7 @@
 # Print the release notes for a version: its CHANGELOG.md section, the link to
 # all changes since the previous release, and install and verification steps.
 #   scripts/release-notes.sh 0.1.0-alpha.1
+# BKS_NOTARIZED=1: the binaries are Developer ID signed and notarized.
 set -eu
 
 v="${1:?usage: $0 VERSION (without the v)}"
@@ -16,6 +17,12 @@ fi
 # The version's link at the bottom of CHANGELOG.md: a compare link from the
 # previous release (none for the first release).
 compare=$(awk -v v="$v" 'index($0, "[" v "]: ") == 1 { print substr($0, length(v) + 5) }' CHANGELOG.md)
+
+if [ -n "${BKS_NOTARIZED:-}" ]; then
+  signing="The binaries are signed with a Developer ID and notarized by Apple; the first time a downloaded copy runs, macOS checks that with Apple online. If macOS still refuses to run it (for example offline): \`xattr -dr com.apple.quarantine bks_${v}_darwin_*\`."
+else
+  signing="The binaries are ad-hoc signed (with the hardened runtime), not notarized. Files downloaded with a browser get a quarantine flag that makes macOS refuse to run them; \`curl\` does not set it. If you used a browser: \`xattr -dr com.apple.quarantine bks_${v}_darwin_*\`."
+fi
 
 printf '%s\n' "$section"
 case "$compare" in
@@ -41,7 +48,7 @@ tar -xzf \$name.tar.gz
 ln -s "\$PWD/\$name/bks" ~/.local/bin/bks   # keep bks next to bks-mac
 \`\`\`
 
-The binaries are signed with a Developer ID and notarized by Apple; the first time a downloaded copy runs, macOS checks that with Apple online. If macOS still refuses to run it (for example offline): \`xattr -dr com.apple.quarantine bks_${v}_darwin_*\`.
+$signing
 
 Requires macOS 13 or later and GnuPG (tested with GPG Suite). See the [guide](https://zurlys.github.io/bks/guide.html).
 NOTES

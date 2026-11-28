@@ -4,6 +4,10 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] - 2026-11-28
+
+Several vaults, iCloud Drive by default, and a vault picker. Your existing vault becomes `personal` and stays where it is until you move it (`bks` offers to).
+
 ### Added
 
 - Several vaults (personal, work, …), each with its own GPG keys, Touch ID enrolment, pin and lock. `bks` asks which to open (the last used is preselected); `-v <name>` picks one; commands without `-v` use the default vault. The vault's name is shown in the header and on the lock screen. `ctrl-v` switches to another vault: the open one is wiped (the process restarts, as for a lock) and the picker preselects the other. It never pastes into the search box, where the clipboard (often a password just copied) would show in the clear; ⌘V still pastes.
@@ -17,8 +21,8 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 
 - Search also matches the short, one-line values of non-secret fields: the username or email of imported 1Password server, database and email items is now found. Secret fields, passwords and notes are still never searched.
 - `BKS_VAULT` takes a vault name or a path; `BKS_STATE_DIR` applies only together with a path.
-
-- Releases are signed with a Developer ID and notarized by Apple: a copy downloaded with a browser runs without the `xattr` step.
+- `make install` copies `bks` and its helper `bks-mac` to `~/.local/bin` (any other place with `PREFIX=`), instead of a symlink into the source tree.
+- The release workflow can sign with a Developer ID and notarize ([RELEASING.md](https://github.com/Zurlys/bks/blob/main/RELEASING.md)); until that is set up, releases are ad-hoc signed, as this one is.
 - `bks` and `bks-mac` run with the hardened runtime, in releases and `make` builds: macOS ignores `DYLD_*` code injection into them and refuses debuggers.
 - Before 1.0.0, alpha and beta releases are published as normal releases, so the newest one shows as Latest on the repository page.
 
@@ -45,6 +49,7 @@ First public pre-release. Feedback and bug reports are very welcome; security is
 - Command line: `get`, `otp`, `ls`, `add`, `gen` (characters or EFF diceware), `recipients add/remove`, `rotate`, `touchid`, `version`.
 - 1Password import from `.1pux` exports, with a dry run that shows no secrets.
 
-[Unreleased]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.2...HEAD
+[Unreleased]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.3...HEAD
+[0.1.0-alpha.3]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
 [0.1.0-alpha.2]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [0.1.0-alpha.1]: https://github.com/Zurlys/bks/releases/tag/v0.1.0-alpha.1

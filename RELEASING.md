@@ -62,6 +62,8 @@ Locally, `scripts/build-release.sh vX.Y.Z` builds the same archives signed ad-ho
 
 Releases are signed with a Developer ID Application certificate (hardened runtime, secure timestamp) and notarized by Apple, so macOS runs a downloaded copy without complaint. Nothing is stapled (a ticket cannot be attached to a bare executable): the first time a downloaded copy runs, macOS asks Apple online. Local builds (`make`, `scripts/build-release.sh`) are signed ad-hoc with the same hardened runtime. The Touch ID enrolment does not depend on the signature.
 
+Signing is on when the `release` environment has the `APPLE_TEAM_ID` variable. Without it, the release is ad-hoc signed, the notes say it is not notarized, and the run shows a warning. With it, a missing or broken certificate or key fails the release; it never falls back to ad-hoc.
+
 Everything signing needs lives in the `release` environment (Settings → Environments), which only serves `v*` tags and needs your approval for every run; each secret reaches only the step that uses it.
 
 | Name | Kind | What |

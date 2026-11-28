@@ -58,7 +58,7 @@ Only the latest `main` is supported; there are no maintained release branches ye
 ### Releases
 
 - Built from the tag by the [release workflow](.github/workflows/release.yml) on GitHub-hosted runners; the tests run in a separate job with no access to any signing secret.
-- From the first release after 0.1.0-alpha.2: signed with a Developer ID Application certificate (hardened runtime, secure timestamp) and notarized by Apple (0.1.0-alpha.1 and 0.1.0-alpha.2 are ad-hoc signed). Each archive is listed in `SHA256SUMS` and covered by a build-provenance attestation: `gh attestation verify <archive> --repo Zurlys/bks` proves it was built by that workflow from that tag, and `codesign -dv --verbose=2 bks` shows the Developer ID and team.
+- Signed with a Developer ID Application certificate (hardened runtime, secure timestamp) and notarized by Apple once that is set up in the release workflow; until then releases are ad-hoc signed (from 0.1.0-alpha.3 with the hardened runtime), and their notes say so. Each archive is listed in `SHA256SUMS` and covered by a build-provenance attestation: `gh attestation verify <archive> --repo Zurlys/bks` proves it was built by that workflow from that tag, and `codesign -dv --verbose=2 bks` shows the Developer ID and team.
 - The certificate and the notarization key live in a GitHub environment that serves only `v*` tags and needs the maintainer's approval for every run; each secret reaches only the step that uses it, and the signing keychain is deleted right after signing. The maintainer's GitHub account is therefore part of what you trust, as it is for the source.
 
 ## Known findings and accepted risks
