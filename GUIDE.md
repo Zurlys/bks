@@ -186,7 +186,7 @@ Locking closes the UI and restarts bks at the lock screen, so nothing decrypted 
 | Key | Action |
 |---|---|
 | `ctrl-l` | lock now |
-| `ctrl-v` | switch to another vault (with several vaults; in the search box it is no longer paste, ⌘V still is) |
+| `ctrl-v` | switch to another vault (with one vault it says so). It never pastes into the search box: the clipboard often holds a password. ⌘V pastes. |
 | `ctrl-c` | quit |
 
 ### Entry list (the search box has the focus)

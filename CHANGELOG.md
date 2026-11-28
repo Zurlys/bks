@@ -6,7 +6,7 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 
 ### Added
 
-- Several vaults (personal, work, …), each with its own GPG keys, Touch ID enrolment, pin and lock. `bks` asks which to open (the last used is preselected); `-v <name>` picks one; commands without `-v` use the default vault. The vault's name is shown in the header and on the lock screen. `ctrl-v` switches to another vault: the open one is wiped (the process restarts, as for a lock) and the picker preselects the other.
+- Several vaults (personal, work, …), each with its own GPG keys, Touch ID enrolment, pin and lock. `bks` asks which to open (the last used is preselected); `-v <name>` picks one; commands without `-v` use the default vault. The vault's name is shown in the header and on the lock screen. `ctrl-v` switches to another vault: the open one is wiped (the process restarts, as for a lock) and the picker preselects the other. It never pastes into the search box, where the clipboard (often a password just copied) would show in the clear; ⌘V still pastes.
 - `bks init` asks for the vault's name and place: iCloud Drive (recommended, when on), this Mac only (with a note on whether Time Machine backs it up), or a folder you choose. A vault already synced from another Mac is added instead of replaced.
 - `bks vault list | move | add | rename | default | remove`. `move` copies, checks the copy byte for byte, switches, and renames the old file aside.
 - On start, bks offers to move a vault that is not in iCloud Drive there, with "don't remind me again".

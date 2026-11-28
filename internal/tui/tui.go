@@ -262,11 +262,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+v":
 			// Like a lock (the process restarts, nothing decrypted
 			// survives), then the vault picker instead of the lock screen.
-			// With one vault, ctrl-v stays paste in the search box.
+			// Never paste here: the clipboard usually holds the password
+			// just copied, and the search box would show it in the clear.
 			if m.opt.CanSwitch {
 				m.result = Result{Lock: true, Switch: true, Reason: "switching vaults"}
 				return m.quit()
 			}
+			m.say("ctrl-v switches vaults; this is the only one (add another: bks init <name>)")
+			return m, nil
 		}
 		if m.focus == focusDetail {
 			return m.updateDetail(msg)

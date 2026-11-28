@@ -585,9 +585,17 @@ func TestCtrlVSwitchesVaults(t *testing.T) {
 	if strings.Contains(h.m.View(), "^v vault") {
 		t.Fatal("^v vault offered with one vault")
 	}
+	h.typ("git")
 	h.key(tea.KeyCtrlV)
 	if h.m.Done() || h.m.Result() != (Result{}) {
 		t.Fatalf("ctrl-v with one vault ended the UI: %+v", h.m.Result())
+	}
+	// never a paste into the search box (the clipboard may hold a password)
+	if h.m.query.Value() != "git" {
+		t.Fatalf("search box after ctrl-v: %q", h.m.query.Value())
+	}
+	if !strings.Contains(h.m.View(), "this is the only one") {
+		t.Fatal("no explanation for ctrl-v with one vault")
 	}
 
 	h = newHarness(t)
