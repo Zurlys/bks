@@ -4,8 +4,6 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 
 ## [Unreleased]
 
-## [0.1.0-alpha.3] - 2026-11-27
-
 ### Changed
 
 - Releases are signed with a Developer ID and notarized by Apple: a copy downloaded with a browser runs without the `xattr` step.
@@ -35,7 +33,6 @@ First public pre-release. Feedback and bug reports are very welcome; security is
 - Command line: `get`, `otp`, `ls`, `add`, `gen` (characters or EFF diceware), `recipients add/remove`, `rotate`, `touchid`, `version`.
 - 1Password import from `.1pux` exports, with a dry run that shows no secrets.
 
-[Unreleased]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.3...HEAD
-[0.1.0-alpha.3]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
+[Unreleased]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.2...HEAD
 [0.1.0-alpha.2]: https://github.com/Zurlys/bks/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [0.1.0-alpha.1]: https://github.com/Zurlys/bks/releases/tag/v0.1.0-alpha.1
