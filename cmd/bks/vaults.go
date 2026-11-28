@@ -121,7 +121,7 @@ func initArgs(args []string) (name string, recipients []string, err error) {
 			return "", nil, err
 		}
 		if fs.NArg() > 0 || (name != "" && name != pos) {
-			return "", nil, errors.New("usage: bks init [<name>] [--recipient <key>]...")
+			return "", nil, errors.New("usage: bks init [<name>] [--recipient <key>, repeatable]")
 		}
 		name = pos
 	}
