@@ -106,12 +106,31 @@ func stateFor(e vaults.Env, v vaults.Vault, override string) (string, error) {
 	return st, nil
 }
 
-func cmdInit(ctx context.Context, sel string, args []string) error {
+// initArgs parses "bks init [<name>] [--name <name>] [--recipient <key>]...".
+func initArgs(args []string) (name string, recipients []string, err error) {
 	fs := flags("init")
-	var recipients multi
-	fs.Var(&recipients, "recipient", "GPG key (fingerprint or key ID) that can open the vault; repeatable")
-	name := fs.String("name", "", "name of the new vault")
+	var rs multi
+	fs.Var(&rs, "recipient", "GPG key (fingerprint or key ID) that can open the vault; repeatable")
+	fs.StringVar(&name, "name", "", "name of the new vault")
 	if err := fs.Parse(args); err != nil {
+		return "", nil, err
+	}
+	if fs.NArg() > 0 { // a name first, flags after it
+		pos := fs.Arg(0)
+		if err := fs.Parse(fs.Args()[1:]); err != nil {
+			return "", nil, err
+		}
+		if fs.NArg() > 0 || (name != "" && name != pos) {
+			return "", nil, errors.New("usage: bks init [<name>] [--recipient <key>]...")
+		}
+		name = pos
+	}
+	return name, rs, nil
+}
+
+func cmdInit(ctx context.Context, sel string, args []string) error {
+	name, recipients, err := initArgs(args)
+	if err != nil {
 		return err
 	}
 	if sel == "" {
@@ -121,7 +140,7 @@ func cmdInit(ctx context.Context, sel string, args []string) error {
 	if err != nil {
 		return err
 	}
-	want := vaults.Vault{Name: *name}
+	want := vaults.Vault{Name: name}
 	override := ""
 	if sel != "" && vaults.IsPath(sel) {
 		if want.Path, err = e.Expand(sel); err != nil {

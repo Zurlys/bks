@@ -29,9 +29,9 @@ const usage = `bks — terminal password manager
 
 usage:
   bks                                               open the UI (type to search, enter copies)
-  bks init                                          create a vault (or add one synced from another Mac):
+  bks init [<name>]                                 create a vault (or add one synced from another Mac):
                                                     name, place (iCloud Drive), GPG key
-  bks init [--name <n>] --recipient <key>...        same, non-interactive (fingerprint or key ID)
+  bks init [<name>] --recipient <key>...            same, non-interactive (fingerprint or key ID)
   bks add --title <t> [--user <u>] [--url <url>]... [--tag <t>]... [--otp] [--notes <n>]
           [--generate <len> [--no-symbols] | --words <n> | --password-stdin] [--otp-stdin]
           --otp asks for the otpauth:// URI or base32 secret on the terminal (hidden);

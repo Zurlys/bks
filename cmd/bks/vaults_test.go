@@ -416,3 +416,27 @@ func TestInitAddsExistingVault(t *testing.T) {
 		t.Fatalf("second unlock: %v", err)
 	}
 }
+
+func TestInitArgs(t *testing.T) {
+	for _, c := range []struct {
+		args       []string
+		name, recs string
+	}{
+		{nil, "", ""},
+		{[]string{"test"}, "test", ""},
+		{[]string{"work", "--recipient", "AB12"}, "work", "AB12"},
+		{[]string{"--recipient", "AB12", "--recipient", "CD34", "work"}, "work", "AB12,CD34"},
+		{[]string{"--name", "work"}, "work", ""},
+		{[]string{"--name", "work", "work"}, "work", ""},
+	} {
+		name, recs, err := initArgs(c.args)
+		if err != nil || name != c.name || strings.Join(recs, ",") != c.recs {
+			t.Errorf("%q → %q %q %v", c.args, name, recs, err)
+		}
+	}
+	for _, bad := range [][]string{{"a", "b"}, {"--name", "x", "y"}, {"--bogus"}} {
+		if _, _, err := initArgs(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}
