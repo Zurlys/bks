@@ -37,7 +37,9 @@ type Options struct {
 	// Name is the vault's name, shown in the header (empty: none).
 	Name string
 	// CanSwitch: there are other vaults; ctrl-v ends the UI to switch.
-	CanSwitch  bool
+	CanSwitch bool
+	// Version is shown at the bottom right (empty: none).
+	Version    string
 	Clipboard  clipboard.Clipboard
 	UnlockedAt time.Time
 	// Now returns wall-clock time without a monotonic reading, so a sleep of
@@ -666,7 +668,17 @@ func (m Model) View() string {
 		}
 		help = "y delete · any other key cancels"
 	}
-	return strings.Join([]string{top, searchLine, body, " " + status, " " + dim.Render(trunc(help, w-2))}, "\n")
+	// The version stays at the bottom right; the key hints give way.
+	ver := m.opt.Version
+	helpW := w - 2
+	if ver != "" {
+		helpW -= lipgloss.Width(ver) + 2
+	}
+	footer := " " + dim.Render(trunc(help, max(10, helpW)))
+	if ver != "" {
+		footer += strings.Repeat(" ", max(1, w-lipgloss.Width(footer)-lipgloss.Width(ver)-1)) + dim.Render(ver)
+	}
+	return strings.Join([]string{top, searchLine, body, " " + status, footer}, "\n")
 }
 
 // rightView is the detail pane, or the form while editing.

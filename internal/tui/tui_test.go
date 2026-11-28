@@ -9,6 +9,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"github.com/Zurlys/bks/internal/otp"
 	"github.com/Zurlys/bks/internal/vault"
@@ -598,5 +599,21 @@ func TestCtrlVSwitchesVaults(t *testing.T) {
 	h.key(tea.KeyCtrlV)
 	if !h.m.Done() || h.m.Result() != (Result{Lock: true, Switch: true, Reason: "switching vaults"}) {
 		t.Fatalf("ctrl-v: done %v, %+v", h.m.Done(), h.m.Result())
+	}
+}
+
+func TestVersionBottomRight(t *testing.T) {
+	h := newHarness(t)
+	h.m.opt.Version = "v1.2.3-4-gabcdef0"
+	for _, width := range []int{110, 60} {
+		h.send(tea.WindowSizeMsg{Width: width, Height: 30})
+		lines := strings.Split(h.m.View(), "\n")
+		last := strings.TrimRight(lines[len(lines)-1], " ")
+		if !strings.HasSuffix(last, "v1.2.3-4-gabcdef0") {
+			t.Errorf("width %d: last line %q does not end with the version", width, last)
+		}
+		if w := lipgloss.Width(lines[len(lines)-1]); w > width {
+			t.Errorf("width %d: footer is %d wide", width, w)
+		}
 	}
 }

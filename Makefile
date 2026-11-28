@@ -3,7 +3,9 @@
 
 all: bin/bks bin/bks-mac
 
-VERSION ?=
+# Local builds report the last tag, commits since it and the commit
+# (v0.1.0-alpha.2-9-g6d69e9a); releases and Homebrew pass VERSION.
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null)
 
 # Both are signed ad-hoc with the hardened runtime, as in releases: macOS
 # ignores DYLD_* code injection and refuses debuggers.

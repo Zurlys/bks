@@ -140,6 +140,7 @@ func cmdTUI(ctx context.Context, sel string) error {
 	m := tui.New(tui.Options{
 		Vault: sess.Vault, Name: v.Name, Clipboard: cb,
 		CanSwitch: len(cfg.Vaults) > 1 || (v.Name == "" && len(cfg.Vaults) > 0), Concealed: cb.Concealed(), Events: events,
+		Version:    buildVersion(),
 		UnlockedAt: time.Now().Round(0),
 		Save:       save,
 		Generate:   func() (string, error) { return gen.Password(24, true) },

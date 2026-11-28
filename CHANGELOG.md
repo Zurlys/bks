@@ -10,6 +10,7 @@ All notable changes to bks. The format follows [Keep a Changelog](https://keepac
 - `bks init` asks for the vault's name and place: iCloud Drive (recommended, when on), this Mac only (with a note on whether Time Machine backs it up), or a folder you choose. A vault already synced from another Mac is added instead of replaced.
 - `bks vault list | move | add | rename | default | remove`. `move` copies, checks the copy byte for byte, switches, and renames the old file aside.
 - On start, bks offers to move a vault that is not in iCloud Drive there, with "don't remind me again".
+- The UI shows bks's version at the bottom right; `make` stamps local builds with `git describe` (e.g. `v0.1.0-alpha.2-10-g1234abc`).
 - The list of vaults lives in `~/.config/bks/vaults.json`; an existing vault becomes `personal` and keeps its place and state.
 
 ### Changed
