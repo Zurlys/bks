@@ -1,5 +1,5 @@
 # bks = Go CLI/TUI; bks-mac = Swift helper (Touch ID, screen-lock events, clipboard).
-.PHONY: all test clean site
+.PHONY: all test clean site install
 
 all: bin/bks bin/bks-mac
 
@@ -16,6 +16,14 @@ bin/bks: $(shell find cmd internal -name '*.go') go.mod go.sum
 bin/bks-mac: macos/bks-mac.swift
 	swiftc -swift-version 5 -O -o $@ $<
 	codesign --force --options runtime --timestamp=none --identifier io.github.zurlys.bks-mac --sign - $@
+
+# Copies both binaries (bks trusts only the helper next to it). A fresh file,
+# not an overwrite: macOS caches the signature of a running binary's inode.
+PREFIX ?= $(HOME)/.local
+install: all
+	mkdir -p $(PREFIX)/bin
+	rm -f $(PREFIX)/bin/bks $(PREFIX)/bin/bks-mac
+	install -m 0755 bin/bks bin/bks-mac $(PREFIX)/bin/
 
 test: all
 	go test ./...

@@ -50,8 +50,8 @@ Download an archive from [Releases](https://github.com/Zurlys/bks/releases): `da
 ```sh
 git clone https://github.com/Zurlys/bks.git
 cd bks
-make                                   # builds bin/bks and the helper bin/bks-mac
-ln -s "$PWD/bin/bks" ~/.local/bin/bks  # any directory on your PATH
+make install        # builds bks and its helper bks-mac, copies both to ~/.local/bin
+                    # (another directory on your PATH: make install PREFIX=/usr/local)
 ```
 
 Keep `bks` and `bks-mac` together: bks only trusts the helper built next to it.
